@@ -286,6 +286,17 @@ std::vector<std::tuple<L, R>> combine(std::vector<L> l, std::vector<R> r)
    return v;
    }
 
+template <typename... L, typename R>
+std::vector<std::tuple<L..., R>> combine_flat(std::vector<std::tuple<L...>> l, std::vector<R> r)
+   {
+   auto v = std::vector<std::tuple<L..., R>>();
+   v.reserve((l.end() - l.begin())*(r.end() - r.begin()));
+   for (auto i = l.begin(); i != l.end(); ++i)
+      for (auto j = r.begin(); j != r.end(); ++j)
+         v.push_back(std::tuple_cat(*i, std::make_tuple(*j)));
+   return v;
+   }
+
 /**
  * @brief Given standard container and a predicate, returns a copy of the
  *    container with the elements matching the predicate removed
