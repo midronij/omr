@@ -41,7 +41,11 @@ void TR_CallStackIterator::printStackBacktrace(TR::Compilation *comp)
    }
 
 #if defined(AIXPPC)
+#if defined(__clang__)
+#include <cxxabi.h>
+#else
 #include <demangle.h>
+#endif
 #include <sys/debug.h>
 
 #define GET_CURR_PC(dst) \
@@ -168,8 +172,19 @@ const char *TR_PPCCallStackIterator::getProcedureName()
     strncpy(z, x, name_len);
     z[name_len] = '\0';
     char *ptoc;
-    Name *n = Demangle(z, ptoc); // Probably does a new...which is bad!
-    return n == NULL ? z : n->Text();
+#if defined (__clang__)
+    int32_t status;
+    size_t nameLength = (size_t)name_len;
+    char *n = abi::__cxa_demangle(z, ptoc, &nameLength, &status);
+    return n;
+#else
+    Name *n = Demangle(z,ptoc);
+    char *demangledName = (char*) TR::globalAllocator().allocate(strlen(n->Text()));
+    strcpy(demangledName, n->Text());
+    bool notMangled = (n == NULL);
+    delete n;
+    return notMangled ? z : demangledName;
+#endif
     }
       else
     {
