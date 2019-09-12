@@ -941,7 +941,7 @@ TR::Register *OMR::Power::TreeEvaluator::imulEvaluator(TR::Node *node, TR::CodeG
 
    if (secondOp == TR::iconst || secondOp == TR::iuconst)
       {
-      int32_t value = secondChild->getInt();
+      int32_t value = secondChild->get32bitIntegralValue();
       if (value > 0 && cg->convertMultiplyToShift(node))
          {
          // The multiply has been converted to a shift.
