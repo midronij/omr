@@ -32,6 +32,19 @@ namespace std
 }
 #endif
 
+template <typename T> static
+std::vector<T> test_shifts()
+    {
+    int32_t shiftArray[] = {0, 1, 5, 8, 25, 8*sizeof(T) - 1, 8*sizeof(T)};
+    return std::vector<T>(shiftArray, shiftArray + sizeof(shiftArray)/sizeof(T));
+    }
+
+template <typename T> static
+std::vector<std::tuple<T, T>> test_input_values()
+   {
+   return TRTest::combine(TRTest::const_values<T>(), test_shifts<T>());
+   }
+
 template <typename T>
 T add(T l, T r) {
     return l + r;
@@ -440,6 +453,123 @@ TEST_P(Int8Arithmetic, UsingLoadParam) {
     ASSERT_EQ(param.oracle(param.lhs, param.rhs), entry_point(param.lhs, param.rhs));
 }
 
+TEST_P(Int16Arithmetic, UsingRhsConst) {
+    std::string arch = omrsysinfo_get_CPU_architecture();
+    auto param = TRTest::to_struct(GetParam());
+
+    SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, KnownBug)
+        << "The Z code generator incorrectly spills sub-integer types arguments (see issue #3525)";
+
+    char inputTrees[300] = {0};
+    std::snprintf(inputTrees, sizeof(inputTrees),
+        "(method return=Int16 args=[Int16]"
+        "  (block"
+        "    (ireturn"
+        "        (%s"
+        "          (sload parm=0)"
+        "          (sconst %" OMR_PRId16 ")))))",
+        param.opcode.c_str(),
+        param.rhs);
+    auto trees = parseString(inputTrees);
+
+    ASSERT_NOTNULL(trees);
+
+    Tril::DefaultCompiler compiler(trees);
+
+    ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+
+    auto entry_point = compiler.getEntryPoint<int16_t (*)(int16_t)>();
+    ASSERT_EQ(param.oracle(param.lhs, param.rhs), entry_point(param.lhs));
+}
+
+TEST_P(Int16Arithmetic, UsingLhsConst) {
+    std::string arch = omrsysinfo_get_CPU_architecture();
+    auto param = TRTest::to_struct(GetParam());
+
+    SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, KnownBug)
+        << "The Z code generator incorrectly spills sub-integer types arguments (see issue #3525)";
+
+    char inputTrees[300] = {0};
+    std::snprintf(inputTrees, sizeof(inputTrees),
+        "(method return=Int16 args=[Int16]"
+        "  (block"
+        "    (ireturn"
+        "        (%s"
+        "          (sconst %" OMR_PRId16 ")"
+        "          (sload parm=0)))))",
+        param.opcode.c_str(),
+        param.lhs);
+    auto trees = parseString(inputTrees);
+
+    ASSERT_NOTNULL(trees);
+
+    Tril::DefaultCompiler compiler(trees);
+
+    ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+
+    auto entry_point = compiler.getEntryPoint<int16_t (*)(int32_t)>();
+    ASSERT_EQ(param.oracle(param.lhs, param.rhs), entry_point(param.rhs));
+}
+
+TEST_P(Int8Arithmetic, UsingRhsConst) {
+    auto param = TRTest::to_struct(GetParam());
+
+    std::string arch = omrsysinfo_get_CPU_architecture();
+    SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, KnownBug)
+        << "The Z code generator incorrectly spills sub-integer types arguments (see issue #3525)";
+
+    char inputTrees[300] = {0};
+    std::snprintf(inputTrees, sizeof(inputTrees),
+        "(method return=Int8 args=[Int8]"
+        "  (block"
+        "    (ireturn"
+        "        (%s"
+        "          (bload parm=0)"
+        "          (bconst %" OMR_PRId8 ")))))",
+        param.opcode.c_str(),
+        param.rhs);
+    auto trees = parseString(inputTrees);
+
+    ASSERT_NOTNULL(trees);
+
+    Tril::DefaultCompiler compiler(trees);
+
+    ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+
+    auto entry_point = compiler.getEntryPoint<int8_t (*)(int8_t)>();
+    ASSERT_EQ(param.oracle(param.lhs, param.rhs), entry_point(param.lhs));
+}
+
+TEST_P(Int8Arithmetic, UsingLhsConst) {
+    auto param = TRTest::to_struct(GetParam());
+
+    std::string arch = omrsysinfo_get_CPU_architecture();
+    SKIP_IF(OMRPORT_ARCH_S390 == arch || OMRPORT_ARCH_S390X == arch, KnownBug)
+        << "The Z code generator incorrectly spills sub-integer types arguments (see issue #3525)";
+
+    char inputTrees[300] = {0};
+    std::snprintf(inputTrees, sizeof(inputTrees),
+        "(method return=Int8 args=[Int8]"
+        "  (block"
+        "    (ireturn"
+        "        (%s"
+        "          (bconst %" OMR_PRId8 ")"
+        "          (bload parm=0)))))",
+        param.opcode.c_str(),
+        param.lhs);
+    auto trees = parseString(inputTrees);
+
+    ASSERT_NOTNULL(trees);
+
+    Tril::DefaultCompiler compiler(trees);
+
+    ASSERT_EQ(0, compiler.compile()) << "Compilation failed unexpectedly\n" << "Input trees: " << inputTrees;
+
+    auto entry_point = compiler.getEntryPoint<int8_t (*)(int32_t)>();
+    ASSERT_EQ(param.oracle(param.lhs, param.rhs), entry_point(param.rhs));
+}
+
+
 INSTANTIATE_TEST_CASE_P(ArithmeticTest, Int32Arithmetic, ::testing::Combine(
     ::testing::ValuesIn(TRTest::const_value_pairs<int32_t, int32_t>()),
     ::testing::Values(
@@ -456,14 +586,14 @@ INSTANTIATE_TEST_CASE_P(ArithmeticTest, Int64Arithmetic, ::testing::Combine(
         std::make_tuple<const char*, int64_t(*)(int64_t, int64_t)>("lmul", mul))));
 
 INSTANTIATE_TEST_CASE_P(ArithmeticTest, Int16Arithmetic, ::testing::Combine(
-    ::testing::ValuesIn(TRTest::const_value_pairs<int16_t, int16_t>()),
+    ::testing::ValuesIn(test_input_values<int16_t>()),
     ::testing::Values(
         std::make_tuple<const char*, int16_t(*)(int16_t, int16_t)>("sadd", add<int16_t>),
         std::make_tuple<const char*, int16_t(*)(int16_t, int16_t)>("ssub", sub<int16_t>),
         std::make_tuple<const char*, int16_t(*)(int16_t, int16_t)>("smul", mul<int16_t>))));
 
 INSTANTIATE_TEST_CASE_P(ArithmeticTest, Int8Arithmetic, ::testing::Combine(
-    ::testing::ValuesIn(TRTest::const_value_pairs<int8_t, int8_t>()),
+    ::testing::ValuesIn(test_input_values<int8_t>()),
     ::testing::Values(
         std::make_tuple<const char*, int8_t(*)(int8_t, int8_t)>("badd", add<int8_t>),
         std::make_tuple<const char*, int8_t(*)(int8_t, int8_t)>("bsub", sub<int8_t>),
