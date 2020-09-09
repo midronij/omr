@@ -129,7 +129,7 @@ void loadFloatConstant(TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic loadOp, T
             break;
          case TR::InstOpCode::lxvdsx:
             loadInstr = generateTrg1ImmInstruction(cg, TR::InstOpCode::paddi, node, trgReg, 0);
-            generateTrg1MemInstruction(cg, loadOp, node, trgReg, new (cg->trHeapMemory()) TR::MemoryReference(NULL, trgReg, length, cg));
+            generateTrg1MemInstruction(cg, loadOp, node, trgReg, TR::MemoryReference::createWithIndexReg(cg, NULL, trgReg, length));
             break;
          default:
             TR_ASSERT_FATAL_WITH_NODE(node, false, "Unhandled load instruction %s in loadFloatConstant", TR::InstOpCode(loadOp).getMnemonicName());
@@ -5062,7 +5062,7 @@ static TR::Register *inlineSimpleAtomicUpdate(TR::Node *node, bool isAddOp, bool
       deltaReg = NULL;
       }
 
-   generateMemSrc1Instruction(cg, isLong ? TR::InstOpCode::stdcx_r : TR::InstOpCode::stwcx_r, node, new (cg->trHeapMemory()) TR::MemoryReference(0, valueAddrReg, len, cg),
+   generateMemSrc1Instruction(cg, isLong ? TR::InstOpCode::stdcx_r : TR::InstOpCode::stwcx_r, node, TR::MemoryReference::createWithIndexReg(cg, 0, valueAddrReg, len),
          newValueReg);
 
    // We expect this store is usually successful, i.e., the following branch will not be taken
