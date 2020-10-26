@@ -580,7 +580,7 @@ typedef struct U_128 {
 #define OMR_IS_ONLY_ONE_BIT_SET(value) (0 == ((value) & ((value) - 1)))
 
 /* Workaround for gcc -Wunused-result, which was added in 4.5.4 */
-#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 5)))
+#if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ >= 5))) || defined(__clang__)
 #define J9_IGNORE_RETURNVAL(funcCall) \
 	do { \
 		UDATA _ignoredRc = (UDATA)(funcCall); \
