@@ -93,7 +93,6 @@
 #endif
 
 #if defined(AIXPPC) || defined(LINUXPPC)
-#if defined(__GNUC__) && !defined(__clang__)
 	/* GCC compiler does not provide the same intrinsics. */
 
 	/**
@@ -115,7 +114,6 @@
 	 * performance impact, as __lwsync does not wait for confirmation from each processor.
 	 */
 	inline void __lwsync() { asm volatile ("lwsync"); }
-#endif /* defined(__GNUC__) && !defined(__clang__) */
 #endif /* AIXPPC || LINUXPPC */
 #endif /* !defined(ATOMIC_SUPPORT_STUB) */
 
