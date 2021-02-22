@@ -1305,6 +1305,8 @@ TR::OptionTable OMR::Options::_jitOptions[] = {
    {"waitOnCompilationQueue",        "M\tPerform synchronous wait until compilation queue empty. Primarily for use with Compiler.command", SET_OPTION_BIT(TR_WaitBit), "F", NOT_IN_SUBSET},
    {"x86HLE",         "C\tEnable haswell hardware lock elision", SET_OPTION_BIT(TR_X86HLE), "F"},
    {"x86UseMFENCE",   "M\tEnable to use mfence to handle volatile store", SET_OPTION_BIT(TR_X86UseMFENCE), "F", NOT_IN_SUBSET},
+   {"zzarrayModificationCounter=", "O<nnn>\tCounter tracking maximum number of contiguous-array-view pointers (default is -99)",
+        TR::Options::set32BitNumeric, offsetof(OMR::Options, _zzarrayModificationCounter), 0, "F%d"},
    {NULL}
 };
 
@@ -2609,6 +2611,9 @@ OMR::Options::jitPreProcess()
    _lastSearchCount = INT_MAX;
    _firstOptTransformationIndex = self()->getMinFirstOptTransformationIndex();
    _lastOptTransformationIndex = self()->getMaxLastOptTransformationIndex();
+   // Initialize counter to -99. This indicates that there is no limit
+   // to the number of contiguous-array-views created
+   _zzarrayModificationCounter = -99;
 
    _storeSinkingLastOpt = -1;
 #ifdef J9_PROJECT_SPECIFIC
