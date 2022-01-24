@@ -308,12 +308,18 @@ TR::Register *OMR::Power::TreeEvaluator::dloadEvaluator(TR::Node *node, TR::Code
 
 TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    TR::Node *child = node->getFirstChild();
    static bool disableDirectMove = feGetEnv("TR_disableDirectMove") ? true : false;
 
-   if (node->getDataType() == TR::VectorInt8)
+   if (node->getDataType().getVectorElementType() == TR::Int8)
       {
-      TR::Register *trgReg = cg->allocateRegister(TR_VRF);
+      TR::SymbolReference    *temp    = cg->allocateLocalTemp(TR::DataType::createVectorType(TR::Int8, TR::VectorLength128));
+      TR::MemoryReference *tempMR  = TR::MemoryReference::createWithSymRef(cg, node, temp, 1);
+      TR::Register *srcReg = cg->evaluate(child);
+      generateMemSrc1Instruction(cg, TR::InstOpCode::stb, node, tempMR, srcReg);
 
       //use single xxspltib instruction where possible
       if (child->getOpCode().isLoadConst() && cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
@@ -346,9 +352,9 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
       cg->decReferenceCount(child);
       return trgReg;
       }
-   else if (node->getDataType() == TR::VectorInt16)
+   else if (node->getDataType().getVectorElementType() == TR::Int16)
       {
-      TR::SymbolReference    *temp    = cg->allocateLocalTemp(TR::VectorInt16);
+      TR::SymbolReference    *temp    = cg->allocateLocalTemp(TR::DataType::createVectorType(TR::Int16, TR::VectorLength128));
       TR::MemoryReference *tempMR  = TR::MemoryReference::createWithSymRef(cg, node, temp, 2);
       TR::Register *srcReg = cg->evaluate(child);
       generateMemSrc1Instruction(cg, TR::InstOpCode::sth, node, tempMR, srcReg);
@@ -371,7 +377,7 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
       cg->decReferenceCount(child);
       return trgReg;
       }
-   else if (node->getDataType() == TR::VectorInt32)
+   else if (node->getDataType().getVectorElementType() == TR::Int32)
       {
       TR::Register *tempReg = cg->evaluate(child);
       TR::Register *resReg = cg->allocateRegister(TR_VRF);
@@ -403,7 +409,7 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
 
       return resReg;
       }
-   else if (node->getDataType() == TR::VectorInt64)
+   else if (node->getDataType().getVectorElementType() == TR::Int64)
       {
       TR::Register *srcReg = cg->evaluate(child);
       TR::Register *trgReg = cg->allocateRegister(TR_VRF);
@@ -450,7 +456,7 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
       cg->decReferenceCount(child);
       return trgReg;
       }
-   else if (node->getDataType() == TR::VectorFloat)
+   else if (node->getDataType().getVectorElementType() == TR::Float)
       {
       TR::Register   *srcReg = cg->evaluate(child);
       TR::Register   *trgReg  = cg->allocateRegister(TR_VRF);
@@ -463,7 +469,7 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
       return trgReg;
       }
 
-   TR_ASSERT(node->getDataType() == TR::VectorDouble, "unsupported splats type");
+   TR_ASSERT(node->getDataType().getVectorElementType() == TR::Double, "unsupported splats type");
 
    TR::Register *resReg = node->setRegister(cg->allocateRegister(TR_VSX_VECTOR));
 
