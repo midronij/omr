@@ -1620,6 +1620,18 @@ OMR::X86::AMD64::TreeEvaluator::vdcmpleEvaluator(TR::Node *node, TR::CodeGenerat
    }
 
 TR::Register*
+OMR::X86::AMD64::TreeEvaluator::vdsqrtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
+OMR::X86::AMD64::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+   }
+
+TR::Register*
 OMR::X86::AMD64::TreeEvaluator::vaddEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    return TR::TreeEvaluator::FloatingPointAndVectorBinaryArithmeticEvaluator(node, cg);

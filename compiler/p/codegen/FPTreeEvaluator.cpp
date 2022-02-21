@@ -316,6 +316,7 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
 
    if (node->getDataType().getVectorElementType() == TR::Int8)
       {
+      TR::Register *trgReg = cg->allocateRegister(TR_VRF);
       TR::SymbolReference    *temp    = cg->allocateLocalTemp(TR::DataType::createVectorType(TR::Int8, TR::VectorLength128));
       TR::MemoryReference *tempMR  = TR::MemoryReference::createWithSymRef(cg, node, temp, 1);
       TR::Register *srcReg = cg->evaluate(child);
@@ -328,7 +329,6 @@ TR::Register *OMR::Power::TreeEvaluator::vsplatsEvaluator(TR::Node *node, TR::Co
          }
       else
          {
-         TR::SymbolReference *temp    = cg->allocateLocalTemp(TR::VectorInt8);
          TR::MemoryReference *tempMR  = TR::MemoryReference::createWithSymRef(cg, node, temp, 1);
 
          TR::Register *srcReg = cg->evaluate(child);
