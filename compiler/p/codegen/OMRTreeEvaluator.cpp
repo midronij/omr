@@ -3473,6 +3473,8 @@ TR::Register *OMR::Power::TreeEvaluator::vnegEvaluator(TR::Node *node, TR::CodeG
 
    switch(node->getDataType().getVectorElementType())
      {
+     case TR::Int8:
+       return TR::TreeEvaluator::vnegInt8Helper(node, cg);
      case TR::Int32:
        return TR::TreeEvaluator::vnegInt32Helper(node,cg);
      case TR::Float:
@@ -3483,6 +3485,25 @@ TR::Register *OMR::Power::TreeEvaluator::vnegEvaluator(TR::Node *node, TR::CodeG
        TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
      }
    }
+
+TR::Register *OMR::Power::TreeEvaluator::vnegInt8Helper(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::Node *firstChild;
+   TR::Register *srcReg;
+   TR::Register *resReg;
+
+   firstChild = node->getFirstChild();
+   srcReg = cg->evaluate(firstChild);
+
+   resReg = cg->allocateRegister(TR_VRF);
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, srcReg, srcReg);
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vsububm, node, resReg, resReg, srcReg);
+   node->setRegister(resReg);
+
+   cg->decReferenceCount(firstChild);
+   return resReg;
+   }
+
 
 TR::Register *OMR::Power::TreeEvaluator::vnegInt32Helper(TR::Node *node, TR::CodeGenerator *cg)
    {
