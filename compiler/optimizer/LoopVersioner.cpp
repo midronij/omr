@@ -8223,19 +8223,28 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
       )
       {
       traceMsg(comp(), "             sverma: depsForLoopEntryPrep: 1. node %p.\n", node);
+      TR::Node *firstChild = node->getFirstChild();
       if (!node->getFirstChild()->isThisPointer())
          {
-         /* if it is a load indirect address && the offset is 8 bytes we are probably dealing with
+         /* if it is a load indirect address && child == 1 && the offset is 8 bytes we are probably dealing with
             dataAddr load. so use the child for null check.
+
+            We can reach here either with dataAddr load or with parent of dataAddr load.
+
+            - [ ] Look into creating a new opCode for dataAddr pointer
           */
-         dumpOptDetailsCreatingTest("null", node->getFirstChild());
-         TR::Node *ifacmpeqNode = TR::Node::createif(TR::ifacmpeq, node->getFirstChild(), TR::Node::aconst(node, 0), _exitGotoTarget);
+         if (firstChild->getOpCodeValue() == TR::aloadi && node->getFirstChild()->getOpCodeValue() == TR::aload && node->getNumChildren() == 1)
+            { // We are probably dealing with dataAddr load. Array base is the child of dataAddr load
+            firstChild = node->getFirstChild()->getFirstChild(); // The node to be used in checks
+            }
+         dumpOptDetailsCreatingTest("null", firstChild);
+         TR::Node *ifacmpeqNode = TR::Node::createif(TR::ifacmpeq, firstChild, TR::Node::aconst(node, 0), _exitGotoTarget);
          LoopEntryPrep *nullTestPrep =
             addLoopEntryPrepDep(LoopEntryPrep::TEST, ifacmpeqNode, deps, visited);
 
          if (nullTestPrep == NULL)
             {
-            dumpOptDetailsFailedToCreateTest("null", node->getFirstChild());
+            dumpOptDetailsFailedToCreateTest("null", firstChild);
             return false;
             }
 
@@ -8243,7 +8252,6 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
          _curLoop->_nullTestPreps.insert(std::make_pair(refExpr, nullTestPrep));
          }
 
-      TR::Node *firstChild = node->getFirstChild();
       bool instanceOfReqd = true;
       TR_OpaqueClassBlock *otherClassObject = NULL;
       TR::Node *duplicateClassPtr = NULL;
@@ -8359,21 +8367,21 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
          {
          if (otherClassObject)
             {
-            dumpOptDetailsCreatingTest("type", node->getFirstChild());
-            TR::Node *instanceofNode = TR::Node::createWithSymRef(TR::instanceof, 2, 2, node->getFirstChild(), duplicateClassPtr, comp()->getSymRefTab()->findOrCreateInstanceOfSymbolRef(comp()->getMethodSymbol()));
+            dumpOptDetailsCreatingTest("type", firstChild);
+            TR::Node *instanceofNode = TR::Node::createWithSymRef(TR::instanceof, 2, 2, firstChild, duplicateClassPtr, comp()->getSymRefTab()->findOrCreateInstanceOfSymbolRef(comp()->getMethodSymbol()));
             TR::Node *ificmpeqNode =  TR::Node::createif(TR::ificmpeq, instanceofNode, TR::Node::create(node, TR::iconst, 0, 0), _exitGotoTarget);
             if (addLoopEntryPrepDep(LoopEntryPrep::TEST, ificmpeqNode, deps, visited) == NULL)
                {
-               dumpOptDetailsFailedToCreateTest("type", node->getFirstChild());
+               dumpOptDetailsFailedToCreateTest("type", firstChild);
                return false;
                }
             }
          else if (testIsArray)
             {
 #ifdef J9_PROJECT_SPECIFIC
-            dumpOptDetailsCreatingTest("array type", node->getFirstChild());
+            dumpOptDetailsCreatingTest("array type", firstChild);
 
-            TR::Node *vftLoad = TR::Node::createWithSymRef(TR::aloadi, 1, 1, node->getFirstChild(), comp()->getSymRefTab()->findOrCreateVftSymbolRef());
+            TR::Node *vftLoad = TR::Node::createWithSymRef(TR::aloadi, 1, 1, firstChild, comp()->getSymRefTab()->findOrCreateVftSymbolRef());
             //TR::Node *componentTypeLoad = TR::Node::create(TR::aloadi, 1, vftLoad, comp()->getSymRefTab()->findOrCreateArrayComponentTypeSymbolRef());
             TR::Node *classFlag = NULL;
             if (comp()->target().is32Bit())
@@ -8390,7 +8398,7 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
             TR::Node *cmp = TR::Node::createif(TR::ificmpne, andNode, andConstNode, _exitGotoTarget);
             if (addLoopEntryPrepDep(LoopEntryPrep::TEST, cmp, deps, visited) == NULL)
                {
-               dumpOptDetailsFailedToCreateTest("array type", node->getFirstChild());
+               dumpOptDetailsFailedToCreateTest("array type", firstChild);
                return false;
                }
 #endif
