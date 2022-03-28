@@ -8233,10 +8233,12 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
 
             - [ ] Look into creating a new opCode for dataAddr pointer
           */
-         if (firstChild->getOpCodeValue() == TR::aloadi && node->getFirstChild()->getOpCodeValue() == TR::aload && node->getNumChildren() == 1)
+         if (firstChild->isDataAddrPointer())
             { // We are probably dealing with dataAddr load. Array base is the child of dataAddr load
-            firstChild = node->getFirstChild()->getFirstChild(); // The node to be used in checks
+            firstChild = firstChild->getFirstChild(); // The node to be used in checks
+            traceMsg(comp(), "             sverma: depsForLoopEntryPrep: probably dealing with dataAddr load.\n");
             }
+
          dumpOptDetailsCreatingTest("null", firstChild);
          TR::Node *ifacmpeqNode = TR::Node::createif(TR::ifacmpeq, firstChild, TR::Node::aconst(node, 0), _exitGotoTarget);
          LoopEntryPrep *nullTestPrep =
@@ -8495,7 +8497,11 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
 
       traceMsg(comp(), "sverma: node: %p\n", node);
       // Going a level further to get the array object pointer
-      TR::Node *base = node->getFirstChild()->getFirstChild()->getFirstChild();
+      TR::Node *base = node->getFirstChild()->getFirstChild();
+      if (node->isDataAddrPointer())
+         {
+         base = node->getFirstChild()->getFirstChild()->getFirstChild();
+         }
       TR::Node *arrayLengthNode = TR::Node::create(TR::arraylength, 1, base);
 
       arrayLengthNode->setArrayStride(dataWidth);
