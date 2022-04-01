@@ -39,6 +39,7 @@ enum VectorOperation
    {
    vadd,
    vfma,
+   vabs,
    NumVectorOperations
    };
 
@@ -791,6 +792,8 @@ public:
 
    static TR::ILOpCodes absOpCode(TR::DataType type)
       {
+      if (type.isVector()) return createVectorOpCode(OMR::vabs, type).getOpCodeValue();
+
       switch(type)
          {
          case TR::Int32:   return TR::iabs;
@@ -1426,6 +1429,12 @@ public:
          case TR::fneg:
          case TR::dneg:
             return TR::vneg;
+            
+         case TR::iabs: return ILOpCode::createVectorOpCode(OMR::vabs, TR::DataType::createVectorType(TR::Int32,  vectorLength)).getOpCodeValue();
+         case TR::labs: return ILOpCode::createVectorOpCode(OMR::vabs, TR::DataType::createVectorType(TR::Int64,  vectorLength)).getOpCodeValue();
+         case TR::fabs: return ILOpCode::createVectorOpCode(OMR::vabs, TR::DataType::createVectorType(TR::Float,  vectorLength)).getOpCodeValue();
+         case TR::dabs: return ILOpCode::createVectorOpCode(OMR::vabs, TR::DataType::createVectorType(TR::Double, vectorLength)).getOpCodeValue();
+
          case TR::bor:
          case TR::sor:
          case TR::ior:
