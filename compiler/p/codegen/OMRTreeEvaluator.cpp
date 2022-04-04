@@ -3513,18 +3513,47 @@ TR::Register *OMR::Power::TreeEvaluator::vnegDoubleHelper(TR::Node *node, TR::Co
    }
 
 TR::Register *OMR::Power::TreeEvaluator::vabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
+   {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    switch(node->getDataType().getVectorElementType())
      {
+     case TR::Int32:
+       return TR::TreeEvaluator::vabsInt32Helper(node, cg);
      case TR::Float:
        return TR::TreeEvaluator::inlineVectorUnaryOp(node, cg, TR::InstOpCode::xvabssp);
      case TR::Double:
        return TR::TreeEvaluator::inlineVectorUnaryOp(node, cg, TR::InstOpCode::xvabsdp);
      default:
        TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
-
      }
-}
+   }
+
+TR::Register *OMR::Power::TreeEvaluator::vabsInt32Helper(TR::Node *node, TR::CodeGenerator *cg)
+   {   
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Register *srcReg = cg->evaluate(firstChild);
+
+   TR::Register *resReg = cg->allocateRegister(TR_VRF);
+   TR::Register *shiftReg = cg->allocateRegister(TR_VRF);
+   TR::Register *maskReg = cg->allocateRegister(TR_VRF);
+   
+   node->setRegister(resReg);
+
+   //set shift amount to 31 bits (size of integer - 1)
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, shiftReg, -1);
+
+   //set mask to 0000... if src is positive, 1111... if src is negative
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vsraw, node, maskReg, srcReg, shiftReg);
+
+   //res = (mask + src) ^ mask
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, resReg, maskReg, srcReg);
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, resReg, maskReg);
+
+   cg->decReferenceCount(firstChild);
+   return resReg;
+   }
 
 TR::Register *OMR::Power::TreeEvaluator::vmulEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
