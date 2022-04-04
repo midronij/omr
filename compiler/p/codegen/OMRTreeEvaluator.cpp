@@ -3513,18 +3513,44 @@ TR::Register *OMR::Power::TreeEvaluator::vnegDoubleHelper(TR::Node *node, TR::Co
    }
 
 TR::Register *OMR::Power::TreeEvaluator::vabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-{
+   {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    switch(node->getDataType().getVectorElementType())
      {
+     case TR::Int32:
+       return TR::TreeEvaluator::vabsInt32Helper(node, cg);
      case TR::Float:
        return TR::TreeEvaluator::inlineVectorUnaryOp(node, cg, TR::InstOpCode::xvabssp);
      case TR::Double:
        return TR::TreeEvaluator::inlineVectorUnaryOp(node, cg, TR::InstOpCode::xvabsdp);
      default:
        TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
-
      }
-}
+   }
+
+TR::Register *OMR::Power::TreeEvaluator::vabsInt32Helper(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   if (!(cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9)))
+   {
+      TR_ASSERT(false, "Not yet supported for P8 and lower");
+      return NULL;
+   }
+   
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Register *srcReg = cg->evaluate(firstChild);
+
+   TR::Register *resReg = cg->allocateRegister(TR_VRF);
+   
+   node->setRegister(resReg);
+
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, resReg, 0);
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vabsduw, node, resReg, srcReg, resReg);
+
+   cg->decReferenceCount(firstChild);
+   return resReg;
+   }
 
 TR::Register *OMR::Power::TreeEvaluator::vmulEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {

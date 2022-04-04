@@ -576,7 +576,7 @@
    stvewx,           // store vector element word indexed
 // vabsdub,          // vector absolute difference unsigned byte
 // vabsduh,          // vector absolute difference unsigned hword
-// vabsduw,          // vector absolute difference unsigned word
+   vabsduw,          // vector absolute difference unsigned word
    vand,             // vector logical and
    vandc,            // vector logical and with complement
    vclzlsbb,         // vector count leading zero least-significant bits byte
