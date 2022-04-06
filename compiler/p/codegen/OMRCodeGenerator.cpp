@@ -1760,10 +1760,8 @@ OMR::Power::CodeGenerator::freeAndResetTransientLongs()
 
 
 
-bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::ILOpCode opcode, TR::DataType dt, TR::VectorLength length)
+bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::ILOpCode opcode, TR::DataType dt)
    {
-   if(length != TR::VectorLength128) return false;
-
    // alignment issues
    if (!self()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P8) &&
        dt != TR::Double &&
@@ -1791,7 +1789,6 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::ILOpCode opcode
             else
                return false;
          }
-      return false;
       }
 
    if (self()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P8) &&
