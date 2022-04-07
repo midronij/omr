@@ -3521,6 +3521,8 @@ TR::Register *OMR::Power::TreeEvaluator::vabsEvaluator(TR::Node *node, TR::CodeG
      {
      case TR::Int32:
        return TR::TreeEvaluator::vabsInt32Helper(node, cg);
+     case TR::Int64:
+       return TR::TreeEvaluator::vabsInt64Helper(node, cg);
      case TR::Float:
        return TR::TreeEvaluator::inlineVectorUnaryOp(node, cg, TR::InstOpCode::xvabssp);
      case TR::Double:
@@ -3549,6 +3551,31 @@ TR::Register *OMR::Power::TreeEvaluator::vabsInt32Helper(TR::Node *node, TR::Cod
 
    //res = (mask + src) ^ mask
    generateTrg1Src2Instruction(cg, TR::InstOpCode::vadduwm, node, resReg, maskReg, srcReg);
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, resReg, maskReg);
+
+   cg->decReferenceCount(firstChild);
+   return resReg;
+   }
+
+TR::Register *OMR::Power::TreeEvaluator::vabsInt64Helper(TR::Node *node, TR::CodeGenerator *cg)
+   {   
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Register *srcReg = cg->evaluate(firstChild);
+
+   TR::Register *resReg = cg->allocateRegister(TR_VRF);
+   TR::Register *shiftReg = cg->allocateRegister(TR_VRF);
+   TR::Register *maskReg = cg->allocateRegister(TR_VRF);
+   
+   node->setRegister(resReg);
+
+   //set shift amount to 63 bits (size of integer - 1)
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, shiftReg, -1);
+
+   //set mask to 0000... if src is positive, 1111... if src is negative
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vsrad, node, maskReg, srcReg, shiftReg);
+
+   //res = (mask + src) ^ mask
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vaddudm, node, resReg, maskReg, srcReg);
    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, resReg, maskReg);
 
    cg->decReferenceCount(firstChild);
