@@ -8485,8 +8485,9 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
                                           TR::Node::create(node, TR::iconst, 0, shiftWidth));
          }
 
-      TR::Node *base = node->getFirstChild()->getFirstChild();
       traceMsg(comp(), "sverma: node: %p\n", node);
+      // Going a level further to get the array object pointer
+      TR::Node *base = node->getFirstChild()->getFirstChild()->getFirstChild();
       TR::Node *arrayLengthNode = TR::Node::create(TR::arraylength, 1, base);
 
       arrayLengthNode->setArrayStride(dataWidth);
