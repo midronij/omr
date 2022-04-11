@@ -39,6 +39,7 @@ enum VectorOperation
    {
    vadd,
    vfma,
+   vsqrt,
    NumVectorOperations
    };
 
@@ -1429,6 +1430,10 @@ public:
          case TR::fneg:
          case TR::dneg:
             return TR::vneg;
+
+         case TR::fsqrt: return ILOpCode::createVectorOpCode(OMR::vsqrt, TR::DataType::createVectorType(TR::Float, vectorLength)).getOpCodeValue();
+         case TR::dsqrt: return ILOpCode::createVectorOpCode(OMR::vsqrt, TR::DataType::createVectorType(TR::Double, vectorLength)).getOpCodeValue();
+
          case TR::bor:
          case TR::sor:
          case TR::ior:
@@ -1464,6 +1469,20 @@ public:
          default:
             return TR::BadILOp;
          }
+      return TR::BadILOp;
+      }
+
+   static TR::ILOpCodes sqrtOpCode(TR::DataType type)
+      {
+      if (type.isVector()) return createVectorOpCode(OMR::vsqrt, type).getOpCodeValue();
+
+      switch(type)
+         {
+         case TR::Float:   return TR::fsqrt;
+         case TR::Double:  return TR::dsqrt;
+         default:          return TR::BadILOp;
+         }
+
       return TR::BadILOp;
       }
 
