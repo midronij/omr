@@ -39,6 +39,7 @@ enum VectorOperation
    {
    vadd,
    vfma,
+   vmin,
    NumVectorOperations
    };
 
