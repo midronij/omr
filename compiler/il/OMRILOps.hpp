@@ -40,6 +40,7 @@ enum VectorOperation
    vadd,
    vfma,
    vmin,
+   vmax,
    NumVectorOperations
    };
 

@@ -653,6 +653,7 @@ class OMR_EXTENSIBLE TreeEvaluator: public OMR::TreeEvaluator
    static TR::Register *vnegFloatHelper(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vnegDoubleHelper(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vminEvaluator(TR::Node *node, TR::CodeGenerator *cg);
+   static TR::Register *vmaxEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vdminEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vdmaxEvaluator(TR::Node *node, TR::CodeGenerator *cg);
    static TR::Register *vdmergeEvaluator(TR::Node *node, TR::CodeGenerator *cg);
