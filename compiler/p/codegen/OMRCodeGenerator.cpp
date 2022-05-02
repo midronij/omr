@@ -1827,6 +1827,10 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::ILOpCode opcode
          else
             return false;
       case TR::vxor:
+         if (dt == TR::Int8 || dt == TR::Int16 || dt == TR::Int32 || dt == TR::Int64)
+            return true;
+         else
+            return false;
       case TR::vor:
       case TR::vand:
          if (dt == TR::Int32 || dt == TR::Int64)
