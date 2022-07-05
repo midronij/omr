@@ -1815,6 +1815,11 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
             return true;
          else
             return false;
+      case TR::vreductionAdd:
+         if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32 || et == TR::Float || et == TR::Double)
+            return true;
+         else
+            return false;
       case TR::vload:
       case TR::vloadi:
       case TR::vstore:
