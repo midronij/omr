@@ -2086,17 +2086,17 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
        (rm == TR::sun_nio_cs_UTF_8_Encoder_encodeUTF_8))
        encode = true;
 
-   TR::Node *srcPosition = NULL;
-   TR::Node *dstPosition = NULL;
+   TR::Node *srcPosition = srcOff;
+   TR::Node *dstPosition = dstOff;
    if (encode)
       {
-      srcPosition = TR::TransformUtil::generateArrayOffsetTrees(comp(), srcOff, strideNode, 0, false);
+      srcPosition = TR::TransformUtil::generateArrayOffsetTrees(comp(), srcPosition, strideNode, 0, false);
       arrayTranslateNode->setSourceIsByteArrayTranslate(false);
       arrayTranslateNode->setTargetIsByteArrayTranslate(true);
       }
    else
       {
-      dstPosition = TR::TransformUtil::generateArrayOffsetTrees(comp(), dstOff, strideNode, 0, false);
+      dstPosition = TR::TransformUtil::generateArrayOffsetTrees(comp(), dstPosition, strideNode, 0, false);
       arrayTranslateNode->setSourceIsByteArrayTranslate(true);
       arrayTranslateNode->setTargetIsByteArrayTranslate(false);
       }
