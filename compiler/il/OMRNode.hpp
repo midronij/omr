@@ -1847,8 +1847,8 @@ protected:
       // Flag used by TR::aiadd and TR::aladd
       internalPointer                       = 0x00008000,
 
-      // dataAddr pointer node
-      dataAddrPointer                       = 0x0F000000,
+      // dataAddr pointer node, used by TR::aloadi
+      dataAddrPointer                       = 0x00000400,
 
       // Flags used by TR::arraytranslate and TR::arraytranslateAndTest
       arrayTRT                              = 0x00008000,  ///< used by arraytranslateAndTest
