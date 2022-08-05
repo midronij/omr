@@ -5917,7 +5917,7 @@ OMR::Node::setIsInternalPointer(bool v)
 bool
 OMR::Node::isDataAddrPointer()
    {
-   return _flags.testAny(dataAddrPointer) && self()->getOpCodeValue() == TR::aloadi;
+   return self()->getOpCodeValue() == TR::aloadi && _flags.testAny(dataAddrPointer);
    }
 
 void
