@@ -8885,30 +8885,30 @@
    /* .properties  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequb].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm,
    },
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::vcmpequd, */
-   /* .name        =    "vcmpequd", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::vcmpequd,
+   /* .name        = */ "vcmpequd",
    /* .description =    "Vector Compare Equal Unsigned Dword", */
-   /* .prefix      =    0x00000000, */
-   /* .opcode      =    0x100000C7, */
-   /* .format      =    FORMAT_UNKNOWN, */
-   /* .minimumALS  =    OMR_PROCESSOR_PPC_P8, */
-   /* .properties  =    PPCOpProp_IsVMX | */
-   /*                   PPCOpProp_CompareOp | */
-   /*                   PPCOpProp_SyncSideEffectFree | */
-   /*                   PPCOpProp_HasRecordForm, */
-   /* }, */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0x100000C7,
+   /* .format      = */ FORMAT_VRT_VRA_VRB,
+   /* .minimumALS  = */ OMR_PROCESSOR_PPC_P8,
+   /* .properties  = */ PPCOpProp_IsVMX |
+                        PPCOpProp_CompareOp |
+                        PPCOpProp_SyncSideEffectFree |
+                        PPCOpProp_HasRecordForm,
+   },
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::vcmpequd_r, */
-   /* .name        =    "vcmpequd.", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::vcmpequd_r,
+   /* .name        = */ "vcmpequd.",
    /* .description =    "Vector Compare Equal Unsigned Dword Rc=1", */
-   /* .prefix      =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].prefix, */
-   /* .opcode      =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].opcode + 1, */
-   /* .format      =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].format, */
-   /* .minimumALS  =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].minimumALS, */
-   /* .properties  =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm, */
-   /* }, */
+   /* .prefix      = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].prefix,
+   /* .opcode      = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].opcode + 1,
+   /* .format      = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].format,
+   /* .minimumALS  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].minimumALS,
+   /* .properties  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpequd].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm,
+   },
 
    {
    /* .mnemonic    = */ OMR::InstOpCode::vcmpequh,
@@ -8985,30 +8985,30 @@
    /* .properties  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsb].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm,
    },
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::vcmpgtsd, */
-   /* .name        =    "vcmpgtsd", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::vcmpgtsd,
+   /* .name        = */ "vcmpgtsd",
    /* .description =    "Vector Compare Greater Than Signed Dword", */
-   /* .prefix      =    0x00000000, */
-   /* .opcode      =    0x100003C7, */
-   /* .format      =    FORMAT_UNKNOWN, */
-   /* .minimumALS  =    OMR_PROCESSOR_PPC_P8, */
-   /* .properties  =    PPCOpProp_IsVMX | */
-   /*                   PPCOpProp_CompareOp | */
-   /*                   PPCOpProp_SyncSideEffectFree | */
-   /*                   PPCOpProp_HasRecordForm, */
-   /* }, */
+   /* .prefix      = */ 0x00000000,
+   /* .opcode      = */ 0x100003C7,
+   /* .format      = */ FORMAT_VRT_VRA_VRB,
+   /* .minimumALS  = */ OMR_PROCESSOR_PPC_P8,
+   /* .properties  = */ PPCOpProp_IsVMX |
+                        PPCOpProp_CompareOp |
+                        PPCOpProp_SyncSideEffectFree |
+                        PPCOpProp_HasRecordForm,
+   },
 
-   /* { */
-   /* .mnemonic    =    OMR::InstOpCode::vcmpgtsd_r, */
-   /* .name        =    "vcmpgtsd.", */
+   {
+   /* .mnemonic    = */ OMR::InstOpCode::vcmpgtsd_r,
+   /* .name        = */ "vcmpgtsd.",
    /* .description =    "Vector Compare Greater Than Signed Dword Rc=1", */
-   /* .prefix      =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].prefix, */
-   /* .opcode      =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].opcode + 1, */
-   /* .format      =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].format, */
-   /* .minimumALS  =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].minimumALS, */
-   /* .properties  =    OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm, */
-   /* }, */
+   /* .prefix      = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].prefix,
+   /* .opcode      = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].opcode + 1,
+   /* .format      = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].format,
+   /* .minimumALS  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].minimumALS,
+   /* .properties  = */ OMR::Power::InstOpCode::metadata[OMR::InstOpCode::vcmpgtsd].properties & ~PPCOpProp_HasRecordForm | PPCOpProp_IsRecordForm,
+   },
 
    {
    /* .mnemonic    = */ OMR::InstOpCode::vcmpgtsh,

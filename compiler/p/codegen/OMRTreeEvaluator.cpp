@@ -1016,108 +1016,201 @@ OMR::Power::TreeEvaluator::m2vEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 TR::Register*
 OMR::Power::TreeEvaluator::vcmpeqEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    TR::DataType elementType = node->getDataType().getVectorElementType();
 
    switch (elementType)
       {
+      case TR::Int8:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequb);
+      case TR::Int16:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequh);
       case TR::Int32:
          return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequw);
+      case TR::Int64:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpequd);
+      case TR::Float:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpeqsp);
       case TR::Double:
          return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpeqdp);
       default:
-         return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+         TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
       }
+   }
+
+TR::Register *vcmpComplementHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic op)
+   {
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Node *secondChild = node->getSecondChild();
+
+   TR::Register *lhsReg = cg->evaluate(firstChild);
+   TR::Register *rhsReg = cg->evaluate(secondChild);
+   TR::Register *resReg = cg->allocateRegister(TR_VRF);
+
+   node->setRegister(resReg);
+
+   //take the compliment of the given comparison operation
+   generateTrg1Src2Instruction(cg, op, node, resReg, lhsReg, rhsReg);
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlnor, node, resReg, resReg, resReg);
+
+   cg->decReferenceCount(firstChild);
+   cg->decReferenceCount(secondChild);
+   return resReg;
    }
 
 TR::Register*
 OMR::Power::TreeEvaluator::vcmpneEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
-   return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+      TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+      TR::DataType elementType = node->getDataType().getVectorElementType();
+
+      // (A != B) == ~(A == B)
+      switch (elementType)
+      {
+      case TR::Int8:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpequb);
+      case TR::Int16:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpequh);
+      case TR::Int32:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpequw);
+      case TR::Int64:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpequd);
+      case TR::Float:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::xvcmpeqsp);
+      case TR::Double:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::xvcmpeqdp);
+      default:
+         TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
+      }
+   }
+
+TR::Register *vcmplteHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic gte)
+   {
+   TR::Node *firstChild = node->getFirstChild();
+   TR::Node *secondChild = node->getSecondChild();
+
+   TR::Register *lhsReg = cg->evaluate(firstChild);
+   TR::Register *rhsReg = cg->evaluate(secondChild);
+   TR::Register *resReg = cg->allocateRegister(TR_VRF);
+
+   node->setRegister(resReg);
+
+   //since there is no PPC instruction for LT/LE, swap LHS and RHS and use GT/GE instruction instead
+   generateTrg1Src2Instruction(cg, gte, node, resReg, rhsReg, lhsReg);
+
+   cg->decReferenceCount(firstChild);
+   cg->decReferenceCount(secondChild);
+   return resReg;
    }
 
 TR::Register*
 OMR::Power::TreeEvaluator::vcmpltEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    TR::DataType elementType = node->getDataType().getVectorElementType();
 
+   // (A < B) == (B > A)
    switch (elementType)
       {
+      case TR::Int8:
+         return vcmplteHelper(node, cg, TR::InstOpCode::vcmpgtsb);
+      case TR::Int16:
+         return vcmplteHelper(node, cg, TR::InstOpCode::vcmpgtsh);
       case TR::Int32:
-         node->swapChildren();
-         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsw);
+         return vcmplteHelper(node, cg, TR::InstOpCode::vcmpgtsw);
+      case TR::Int64:
+         return vcmplteHelper(node, cg, TR::InstOpCode::vcmpgtsd);
+      case TR::Float:
+         return vcmplteHelper(node, cg, TR::InstOpCode::xvcmpgtsp);
       case TR::Double:
-         node->swapChildren();
-         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgtdp);
+         return vcmplteHelper(node, cg, TR::InstOpCode::xvcmpgtdp);
       default:
-         return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+         TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
       }
    }
 
 TR::Register*
 OMR::Power::TreeEvaluator::vcmpgtEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    TR::DataType elementType = node->getDataType().getVectorElementType();
 
    switch (elementType)
       {
+      case TR::Int8:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsb);
+      case TR::Int16:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsh);
       case TR::Int32:
          return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsw);
+      case TR::Int64:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::vcmpgtsd);
+      case TR::Float:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgtsp);
       case TR::Double:
          return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgtdp);
       default:
-         return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+         TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
       }
    }
 
 TR::Register*
 OMR::Power::TreeEvaluator::vcmpleEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    TR::DataType elementType = node->getDataType().getVectorElementType();
 
    switch (elementType)
       {
+      case TR::Int8:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpgtsb); // (A <= B) == ~(A > B)
+      case TR::Int16:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpgtsh);
       case TR::Int32:
-         node->swapChildren();
-         return TR::TreeEvaluator::vcmpgeEvaluator(node, cg);
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpgtsw);
+      case TR::Int64:
+         return vcmpComplementHelper(node, cg, TR::InstOpCode::vcmpgtsd);
+      case TR::Float:
+         return vcmplteHelper(node, cg, TR::InstOpCode::xvcmpgesp); // (A <= B) == (B >= A)
       case TR::Double:
-         node->swapChildren();
-         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgedp);
+         return vcmplteHelper(node, cg, TR::InstOpCode::xvcmpgedp);
       default:
-         return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+         TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
       }
    }
 
 TR::Register*
 OMR::Power::TreeEvaluator::vcmpgeEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
+   TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+                   "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
    TR::DataType elementType = node->getDataType().getVectorElementType();
 
    switch (elementType)
       {
+      case TR::Int8:
+      case TR::Int16:
       case TR::Int32:
-         {
-         TR::Node *firstChild = node->getFirstChild();
-         TR::Node *secondChild = node->getSecondChild();
-         TR::Register *lhsReg = NULL, *rhsReg = NULL;
-
-         lhsReg = cg->evaluate(firstChild);
-         rhsReg = cg->evaluate(secondChild);
-
-         TR::Register *resReg = cg->allocateRegister(TR_VRF);
-         TR::Register *tempReg = cg->allocateRegister(TR_VRF);
-         node->setRegister(resReg);
-         generateTrg1Src2Instruction(cg, TR::InstOpCode::vcmpgtsw, node, resReg, lhsReg, rhsReg);
-         generateTrg1Src2Instruction(cg, TR::InstOpCode::vcmpequw, node, tempReg, lhsReg, rhsReg);
-         generateTrg1Src2Instruction(cg, TR::InstOpCode::vor, node, resReg, tempReg, resReg);
-         cg->stopUsingRegister(tempReg);
-         cg->decReferenceCount(firstChild);
-         cg->decReferenceCount(secondChild);
-         return resReg;
-         }
+      case TR::Int64:
+         node->swapChildren();
+         return TR::TreeEvaluator::vcmpleEvaluator(node, cg); // (A >= B) == (B <= A)
+      case TR::Float:
+         return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgesp);
       case TR::Double:
          return TR::TreeEvaluator::inlineVectorBinaryOp(node, cg, TR::InstOpCode::xvcmpgedp);
       default:
-         return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+         TR_ASSERT(false, "unrecognized vector type %s\n", node->getDataType().toString()); return NULL;
       }
    }
 
