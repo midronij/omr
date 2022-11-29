@@ -1870,6 +1870,8 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
             return true;
          else
             return false;
+      case TR::vbitselect:
+         return true;
       default:
          return false;
       }
