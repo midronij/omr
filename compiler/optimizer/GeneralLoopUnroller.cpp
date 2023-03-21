@@ -3937,11 +3937,13 @@ TR_GeneralLoopUnroller::weighNaturalLoop(TR_RegionStructure *loop,
 
          dumpOptDetails(comp(), "\touterloop relative frequency = %.2g\n", outerLoopRelativeFrequency);
 
+         /*
          if (outerLoopRelativeFrequency <= 1.3f) // FIXME: const
             {
             dumpOptDetails(comp(), "\trejecting loop because its not warm enough compared to the outer loop\n");
             return -1;
             }
+         */
 
          // Increase the weight
          weight += (int)(100 * outerLoopRelativeFrequency); // FIXME: const
