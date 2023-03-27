@@ -66,6 +66,8 @@ class ObjectModel
    // trees.  This does not imply that it will for this compilation unit: you must ask
    // Compilation::generateArraylets() to answer that.
    //
+   // TODO_sverma: how does this affect us? Is checking this compilation unit more
+   // reliable?
    bool canGenerateArraylets() { return false; }
 
    bool useHybridArraylets() { return false; }
