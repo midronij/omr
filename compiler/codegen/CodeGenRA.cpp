@@ -402,6 +402,7 @@ OMR::CodeGenerator::allocateInternalPointerSpill(TR::AutomaticSymbol *pinningArr
          }
       }
 
+   // sverma: teach this about dataAddr pointer
    // If there isn't an existing one, make a new one
    //
    if (!spill)
