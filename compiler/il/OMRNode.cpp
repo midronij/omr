@@ -3773,7 +3773,7 @@ OMR::Node::createLongIfNeeded()
  */
 TR::TreeTop *
 OMR::Node::createStoresForVar(TR::SymbolReference * &nodeRef, TR::TreeTop *insertBefore, bool simpleRef)
-   {
+   { // TODO: example of where internal pointers are created
    TR::Compilation * comp = TR::comp();
    TR::TreeTop *storeTree = NULL;
    if ((self()->getReferenceCount() == 1) &&
