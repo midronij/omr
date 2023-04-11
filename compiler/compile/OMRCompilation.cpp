@@ -1673,8 +1673,18 @@ bool OMR::Compilation::canTransformUnsafeCopyToArrayCopy()
    {
    if (!self()->getOptions()->realTimeGC() &&
        !TR::Compiler->om.canGenerateArraylets() &&
+       !TR::Compiler->om.isOffHeapAllocationEnabled() &&
        self()->cg()->canTransformUnsafeCopyToArrayCopy())
+      {
+      /* Unsafe.copyMemory(...) and Unsafe.copyMemory0(...) can be called with
+       * offset containing absolute base address and object reference
+       * containing NULL. JIT needs address of the object to get to array data
+       * elements. Location of the data elements is stored in dataAddr slot of
+       * the array header so without object address JIT can't get to those
+       * elements. Hence, disabling the transformation if off-heap is enabled.
+       */
       return true;
+      }
 
    return false;
    }
