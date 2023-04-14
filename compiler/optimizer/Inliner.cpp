@@ -3368,13 +3368,7 @@ TR::TreeTop * OMR_InlinerUtil::storeValueInATemp(
          TR::AutomaticSymbol *pinningArray = NULL;
          if (value->getOpCode().isArrayRef())
             {
-            TR::Node *valueChild = NULL;
-
-            if (TR::Compiler->om.isOffHeapAllocationEnabled())
-               valueChild = value->getFirstChild()->getFirstChild();
-            else
-               valueChild = value->getFirstChild();
-
+            TR::Node *valueChild = value->getFirstChild();
             if (valueChild->isInternalPointer() &&
                   valueChild->getPinningArrayPointer())
                {
