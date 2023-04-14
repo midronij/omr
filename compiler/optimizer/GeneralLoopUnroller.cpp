@@ -3568,19 +3568,31 @@ TR_GeneralLoopUnroller::perform()
       if (top->_cost > budget)
          continue;
 
-      budget -= top->_cost;
-
       if (trace())
          traceMsg(comp(), "<unroll loop=\"%d\">\n", top->_loop->getNumber());
 
+      bool didUnroll = false;
       if (top->_loop->getPrimaryInductionVariable())
-         TR_LoopUnroller::unroll(comp(), top->_loop, top->_loop->getPrimaryInductionVariable(),
-                                 top->_unrollKind, top->_unrollCount, top->_peelCount, optimizer());
+         {
+         didUnroll = TR_LoopUnroller::unroll(
+            comp(),
+            top->_loop,
+            top->_loop->getPrimaryInductionVariable(),
+            top->_unrollKind,
+            top->_unrollCount,
+            top->_peelCount, optimizer());
+         }
       else
-         TR_LoopUnroller::unroll(comp(), top->_loop, top->_unrollCount, top->_peelCount, optimizer());
+         {
+         didUnroll = TR_LoopUnroller::unroll(
+            comp(), top->_loop, top->_unrollCount, top->_peelCount, optimizer());
+         }
 
       if (trace())
          traceMsg(comp(), "</unroll>\n");
+
+      if (didUnroll)
+         budget -= top->_cost;
       }
 
    return 1;
