@@ -1693,8 +1693,23 @@ bool OMR::Compilation::canTransformUnsafeSetMemory()
    {
    if (!self()->getOptions()->realTimeGC() &&
        !TR::Compiler->om.canGenerateArraylets() &&
+       !TR::Compiler->om.isOffHeapAllocationEnabled() &&
        self()->cg()->canTransformUnsafeSetMemory())
+      {
+      /* Object passed into Unsafe.setMemory0(...) is not
+       * guaranteed to be an arrary. Disabling the
+       * transformation until we can figure out a way to
+       * verify object type.
+       * This can be problematic when off heap allocation
+       * is enabled. Off heap technology works
+       * by loading dataAddr pointer from the array header.
+       * Without verifying object type first we might end
+       * up loading some random value and crash.
+       * So disabling the transformation until we figure
+       * out a way to detect arrays.
+       */
       return true;
+      }
 
    return false;
    }
