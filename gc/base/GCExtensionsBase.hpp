@@ -1511,7 +1511,7 @@ public:
 		, isArrayletDoubleMapAvailable(false)
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
 #if defined(OMR_ENV_DATA64)
-		, isVirtualLargeObjectHeapRequested(false)
+		, isVirtualLargeObjectHeapRequested(true)
 		, isVirtualLargeObjectHeapEnabled(false)
 #endif /* defined(OMR_ENV_DATA64) */
 		, requestedPageSize(0)
