@@ -671,7 +671,20 @@ static bool willNotInlineCompareAndSwapNative(TR::Node *node,
    TR::SymbolReference *callSymRef = node->getSymbolReference();
    TR::MethodSymbol *methodSymbol = callSymRef->getSymbol()->castToMethodSymbol();
 
-   if (TR::Compiler->om.canGenerateArraylets() && !node->isUnsafeGetPutCASCallOnNonArray())
+   /* Disable inlining of compare and swap when off heap
+    * allocation is enabled because compare and swap expects
+    * arrays to be allocated contiguouslly right after the
+    * array header. This is not always the case when off heap
+    * allocation is enabled. We can get around it by reading
+    * the address of the data portion from the array header
+    * but there is not way to tell if the object being
+    * passed in is an array or some other object. So disabling
+    * the transformation until we figure out how to detect
+    * arrays.
+    */
+   if (TR::Compiler->om.canGenerateArraylets()
+      && TR::Compiler->om.isOffHeapAllocationEnabled()
+      && !node->isUnsafeGetPutCASCallOnNonArray())
       return true;
    static char *disableCASInlining = feGetEnv("TR_DisableCASInlining");
 
