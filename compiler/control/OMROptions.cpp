@@ -2607,14 +2607,16 @@ OMR::Options::jitPreProcess()
    _disabledOptimizations[IVTypeTransformation] = true;
    _disabledOptimizations[basicBlockHoisting] = true;
 
-#ifdef OMR_GC_SPARSE_HEAP_ALLOCATION
    if (TR::Compiler->om.isOffHeapAllocationEnabled())
       {
-      // Disable opts known to be broken for off heap
+      // sverma: disable opts known to be broken for off heap
       _disabledOptimizations[escapeAnalysis] = true;
       _disabledOptimizations[idiomRecognition] = true;
+      // Disable OSR
+      self()->setOption(TR_DisableOSR);
+      self()->setOption(TR_EnableOSR, false);
+      self()->setOption(TR_EnableOSROnGuardFailure, false);
       }
-#endif
 
    self()->setOption(TR_DisableTreePatternMatching);
    self()->setOption(TR_DisableHalfSlotSpills);
