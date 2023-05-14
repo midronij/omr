@@ -296,6 +296,7 @@ OMR::Z::CodeGenerator::lowerTreeIfNeeded(
 
       if (self()->comp()->target().is64Bit())
          {
+         traceMsg(comp(), "Lower Trees - 64 bit");
          addOp = TR::aladd;
          subOp = TR::lsub;
          constOp = TR::lconst;
@@ -314,6 +315,7 @@ OMR::Z::CodeGenerator::lowerTreeIfNeeded(
             {
             isInternalPointer = true;
             pinningArrayPointer = add1->getPinningArrayPointer();
+            traceMsg(comp(), "Lower Trees - FirstChild == addOp\n");
             }
          }
       if (add1 && add1->getFirstChild()->getOpCodeValue() == addOp)
@@ -324,6 +326,7 @@ OMR::Z::CodeGenerator::lowerTreeIfNeeded(
             {
             isInternalPointer = true;
             pinningArrayPointer = add2->getPinningArrayPointer();
+            traceMsg(comp(), "Lower Trees - add1->FirstChild == addOp\n");
             }
          }
       if (add1 && add1->getSecondChild()->getOpCodeValue() == subOp)
@@ -333,17 +336,20 @@ OMR::Z::CodeGenerator::lowerTreeIfNeeded(
             {
             isInternalPointer = true;
             pinningArrayPointer = add1->getPinningArrayPointer();
+            traceMsg(comp(), "Lower Trees - FirstChild == subOp\n");
             }
          }
       if (add2 && add2->getSecondChild()->getOpCode().isLoadConst())
          {
          const1 = add2->getSecondChild();
          index = add1->getSecondChild();
+         traceMsg(comp(), "Lower Trees - add2->SecondChild == LoadConst\n");
          }
       if (sub && sub->getSecondChild()->getOpCode().isLoadConst())
          {
          const2 = sub->getSecondChild();
          index = sub->getFirstChild();
+         traceMsg(comp(), "Lower Trees - sub\n");
          }
 
       if (add1 && add2 && const1 == NULL && const2 == NULL)
@@ -355,8 +361,9 @@ OMR::Z::CodeGenerator::lowerTreeIfNeeded(
             base = add2->getFirstChild();
             if (add2->isInternalPointer())
                {
-               isInternalPointer = true;
-               pinningArrayPointer = add2->getPinningArrayPointer();
+                  isInternalPointer = true;
+                  pinningArrayPointer = add2->getPinningArrayPointer();
+                  traceMsg(comp(), "Lower Trees - NULL Consts\n");
                }
             if (add2->getSecondChild()->getOpCode().isLoadConst())
                const2 = add2->getSecondChild();
@@ -367,17 +374,20 @@ OMR::Z::CodeGenerator::lowerTreeIfNeeded(
 
       if (add1 && add2 && const1 && performTransformation(self()->comp(), "%sBase/index/displacement form addressing prep for node [%p]\n", OPT_DETAILS, node))
          {
-         // traceMsg(comp(), "&&& Found pattern root=%llx add1=%llx add2=%llx const1=%llx sub=%llx const2=%llx\n", node, add1, add2, const1, sub, const2);
+         traceMsg(comp(), "&&& Found pattern root=%llx add1=%llx add2=%llx const1=%llx sub=%llx const2=%llx\n", node, add1, add2, const1, sub, const2);
+         traceMsg(comp(), "Lower Trees - Found Pattern\n");
 
          intptr_t offset = 0;
          if (self()->comp()->target().is64Bit())
             {
             offset = const1->getLongInt();
+            traceMsg(comp(), "Lower Trees - Offset = %d\n", offset);
             if (const2)
               if (sub)
                  offset -= const2->getLongInt();
               else
                  offset += const2->getLongInt();
+            traceMsg(comp(), "Lower Trees - Offset = %d\n", offset);
             }
          else
             {
@@ -3773,6 +3783,7 @@ OMR::Z::CodeGenerator::buildRegisterMapForInstruction(TR_GCStackMap * map)
                   }
                internalPtrMap->addInternalPointerPair(virtReg->getPinningArrayPointer(), i);
                atlas->addPinningArrayPtrForInternalPtrReg(virtReg->getPinningArrayPointer());
+               traceMsg(comp(), "Internal Pointer buildup from OMRCodeGenerator.cpp\n");
                }
             else if (virtReg->containsCollectedReference())
                {
