@@ -1001,6 +1001,7 @@ TR_Debug::nodePrintAllFlags(TR::Node *node, TR_PrettyPrinterString &output)
    FLAG(chkDesynchronizeCall, "desynchronizeCall");
    FLAG(chkCompressionSequence, "compressionSequence");
    FLAG(isInternalPointer, "internalPtr");
+   FLAG(isDataAddrPointer, "dataAddrPointer");
    FLAG(isMaxLoopIterationGuard, "maxLoopIternGuard");
    FLAG_IF(guard != NULL && node->vftEntryIsInBounds(), "vftEntryIsInBounds");
    FLAG(childrenWereSwapped, "swappedChildren");
