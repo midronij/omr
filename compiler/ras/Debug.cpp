@@ -1566,6 +1566,8 @@ TR_Debug::getName(TR::SymbolReference * symRef)
             return "<contiguous-array-size>";
          case TR::SymbolReferenceTable::discontiguousArraySizeSymbol:
             return "<discontiguous-array-size>";
+         case TR::SymbolReferenceTable::contiguousArrayDataAddrFieldSymbol:
+            return "<contiguous-array-dataAddr-field>";
          case TR::SymbolReferenceTable::arrayClassRomPtrSymbol:
             return "<array-class-rom-ptr>";
          case TR::SymbolReferenceTable::vftSymbol:
@@ -2066,6 +2068,7 @@ static const char *commonNonhelperSymbolNames[] =
    {
    "<contiguousArraySize>",
    "<discontiguousArraySize>",
+   "<contiguousArrayDataAddrField>",
    "<arrayClassRomPtr>",
    "<classRomPtr>",
    "<javaLangClassFromClass>",

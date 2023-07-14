@@ -151,6 +151,18 @@ OMR::SymbolReferenceTable::findOrCreateContiguousArraySizeSymbolRef()
    return element(contiguousArraySizeSymbol);
    }
 
+TR::SymbolReference *
+OMR::SymbolReferenceTable::findOrCreateContiguousArrayDataAddrFieldSymbolRef()
+   {
+   if (!element(contiguousArrayDataAddrFieldSymbol))
+      {
+      TR::Symbol * sym = TR::Symbol::createShadow(trHeapMemory(), TR::Address);
+      element(contiguousArrayDataAddrFieldSymbol) = new (trHeapMemory()) TR::SymbolReference(self(), contiguousArrayDataAddrFieldSymbol, sym);
+      element(contiguousArrayDataAddrFieldSymbol)->setOffset(fe()->getOffsetOfContiguousDataAddrField()());
+      }
+   return element(contiguousArrayDataAddrFieldSymbol);
+   // TODO_sverma: don't need to set symbol as shadow or internal pointer
+   }
 
 TR::SymbolReference *
 OMR::SymbolReferenceTable::findOrCreateVftSymbolRef()
@@ -2115,6 +2127,7 @@ const char *OMR::SymbolReferenceTable::_commonNonHelperSymbolNames[] =
    {
    "<contiguousArraySize>",
    "<discontiguousArraySize>",
+   "<contiguousArrayDataAddrFieldSymbol>",
    "<arrayClassRomPtr>",
    "<javaLangClassFromClass>",
    "<classFromJavaLangClass>",

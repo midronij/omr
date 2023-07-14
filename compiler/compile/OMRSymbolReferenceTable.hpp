@@ -104,6 +104,7 @@ class SymbolReferenceTable
 
       contiguousArraySizeSymbol = firstCommonNonhelperNonArrayShadowSymbol,
       discontiguousArraySizeSymbol,
+      contiguousArrayDataAddrFieldSymbol,
       arrayClassRomPtrSymbol,
       classRomPtrSymbol,
       javaLangClassFromClassSymbol,
@@ -798,6 +799,7 @@ class SymbolReferenceTable
    TR::SymbolReference * findOrCreateTemporaryWithKnowObjectIndex(TR::ResolvedMethodSymbol * owningMethodSymbol, TR::KnownObjectTable::Index knownObjectIndex);
    TR::SymbolReference * findOrCreateThisRangeExtensionSymRef(TR::ResolvedMethodSymbol *owningMethodSymbol = 0);
    TR::SymbolReference * findOrCreateContiguousArraySizeSymbolRef();
+   TR::SymbolReference * findOrCreateContiguousArrayDataAddrFieldSymbolRef();
    TR::SymbolReference * findOrCreateNewArrayNoZeroInitSymbolRef(TR::ResolvedMethodSymbol * owningMethodSymbol);
    TR::SymbolReference * findOrCreateNewObjectSymbolRef(TR::ResolvedMethodSymbol * owningMethodSymbol);
    TR::SymbolReference * findOrCreateNewObjectNoZeroInitSymbolRef(TR::ResolvedMethodSymbol * owningMethodSymbol);
