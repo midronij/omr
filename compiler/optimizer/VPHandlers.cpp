@@ -1363,6 +1363,11 @@ TR::Node *constrainAnyIntLoad(OMR::ValuePropagation *vp, TR::Node *node)
        node->getSymbol()->isArrayShadowSymbol() &&
        node->getFirstChild()->getOpCode().isAdd())
       {
+      // ToDo: Opportunity to abstract this logic into J9::TransformUtil?
+      //    TR::Node *array = J9::TransformUtil::findArrayBaseNode(vp->comp(), node);
+      //    TR::Node *index = J9::TransformUtil::findArrayIndexNode(vp->comp(), node);
+      //    Questions before we can do that:
+      //       - Can we always expect array base and index to be at the same place?
       TR::Node *array = node->getFirstChild()->getFirstChild();
       TR::Node *index = node->getFirstChild()->getSecondChild();
       if (index->getOpCode().isLoadConst())
@@ -2028,6 +2033,9 @@ static TR::Node *findArrayIndexNode(OMR::ValuePropagation *vp, TR::Node *node, i
   bool usingAladd = (vp->comp()->target().is64Bit()
                      ) ?
           true : false;
+   // TODO: Opportunity to abstract this logic into J9::TransformUtil::findArrayIndexNode()?
+   //    Questions before we can do that:
+   //       - Is this generic enough for us to benefit from abstraction?
    // Note: index node here refers to the array element index.
    if (node->getFirstChild()->isDataAddrPointer())
       {
