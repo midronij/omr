@@ -5047,9 +5047,16 @@ OMR::Node::hasArrayStride()
    }
 
 bool
+OMR::Node::supportsPinningArrayPointerInNodeExtension()
+   {
+   return self()->isDataAddrPointer();
+   }
+
+bool
 OMR::Node::hasPinningArrayPointer()
    {
-   return self()->getOpCode().hasPinningArrayPointer();
+   // TODO: update this to check number of extension available children spots
+   return self()->getOpCode().hasPinningArrayPointer() || self()->supportsPinningArrayPointerInNodeExtension();
    }
 
 bool
@@ -5189,16 +5196,28 @@ OMR::Node::setArrayStride(int32_t s)
 TR::AutomaticSymbol*
 OMR::Node::getPinningArrayPointer()
    {
-   TR_ASSERT(self()->hasPinningArrayPointer(), "attempting to access _pinningArrayPointer field for node %s %p that does not have it", self()->getOpCode().getName(), this);
-   return _unionPropertyA._pinningArrayPointer;
+   TR_ASSERT(self()->hasPinningArrayPointer() || _unionBase._extension.getNumElems() >= 6, "attempting to access _pinningArrayPointer field for node %s %p that does not support it", self()->getOpCode().getName(), this);
+
+   if (self()->getOpCode().hasPinningArrayPointer())
+      return _unionPropertyA._pinningArrayPointer;
+
+   return _unionBase._extension.getExtensionPtr()->getElem<TR::AutomaticSymbol *>(5);
    }
 
 TR::AutomaticSymbol*
 OMR::Node::setPinningArrayPointer(TR::AutomaticSymbol *s)
    {
    s->setPinningArrayPointer();
-   TR_ASSERT(self()->hasPinningArrayPointer(), "attempting to access _pinningArrayPointer field for node %s %p that does not have it", self()->getOpCode().getName(), this);
-   return (_unionPropertyA._pinningArrayPointer = s);
+   TR_ASSERT(self()->hasPinningArrayPointer(), "attempting to access _pinningArrayPointer field for node %s %p that does not support it", self()->getOpCode().getName(), this);
+
+   if (self()->getOpCode().hasPinningArrayPointer())
+      return _unionPropertyA._pinningArrayPointer = s;
+
+   int extensionElemNum = _unionBase._extension.getNumElems();
+   if (extensionElemNum < 6)
+      self()->addExtensionElements(6 - extensionElemNum);
+
+   return _unionBase._extension.getExtensionPtr()->setElem<TR::AutomaticSymbol *>(5, s);
    }
 
 TR::DataType
