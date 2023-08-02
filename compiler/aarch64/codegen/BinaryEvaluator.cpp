@@ -2241,7 +2241,7 @@ OMR::ARM64::TreeEvaluator::lxorEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 
 TR::Register *
 OMR::ARM64::TreeEvaluator::aladdEvaluator(TR::Node *node, TR::CodeGenerator *cg)
-   {
+   { // TODO: might need to update this to set child first child as pinning array pointer
    TR::Register *trgReg = laddEvaluator(node, cg);
 
    if (node->isInternalPointer())
