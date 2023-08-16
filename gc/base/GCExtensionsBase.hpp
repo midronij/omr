@@ -279,10 +279,10 @@ public:
 	bool isArrayletDoubleMapRequested;
 	bool isArrayletDoubleMapAvailable;
 #endif /* OMR_GC_DOUBLE_MAP_ARRAYLETS */
-#if defined(OMR_GC_SPARSE_HEAP_ALLOCATION)
+#if defined(OMR_ENV_DATA64)
 	bool isVirtualLargeObjectHeapRequested;
 	bool isVirtualLargeObjectHeapEnabled;
-#endif /* OMR_GC_SPARSE_HEAP_ALLOCATION */
+#endif /* OMR_ENV_DATA64 */
 	uintptr_t requestedPageSize;
 	uintptr_t requestedPageFlags;
 	uintptr_t gcmetadataPageSize;
@@ -1510,10 +1510,10 @@ public:
 		, isArrayletDoubleMapRequested(false)
 		, isArrayletDoubleMapAvailable(false)
 #endif /* defined(OMR_GC_DOUBLE_MAP_ARRAYLETS) */
-#if defined(OMR_GC_SPARSE_HEAP_ALLOCATION)
+#if defined(OMR_ENV_DATA64)
 		, isVirtualLargeObjectHeapRequested(true)
 		, isVirtualLargeObjectHeapEnabled(false)
-#endif /* defined(OMR_GC_SPARSE_HEAP_ALLOCATION) */
+#endif /* defined(OMR_ENV_DATA64) */
 		, requestedPageSize(0)
 		, requestedPageFlags(OMRPORT_VMEM_PAGE_FLAG_NOT_USED)
 		, gcmetadataPageSize(0)
