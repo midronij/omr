@@ -43,11 +43,6 @@
 
    contiguousArraySizeSymbol = firstCommonNonhelperNonArrayShadowSymbol,
    discontiguousArraySizeSymbol,
-   /** \brief
-    *
-    *  This symbol is to be used to load dataAddr field from array header.
-    */
-   contiguousArrayDataAddrFieldSymbol,
    arrayClassRomPtrSymbol,
    javaLangClassFromClassSymbol,
    classFromJavaLangClassSymbol,
