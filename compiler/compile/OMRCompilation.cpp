@@ -1694,7 +1694,6 @@ bool OMR::Compilation::canTransformUnsafeSetMemory()
    {
    if (!self()->getOptions()->realTimeGC() &&
        !TR::Compiler->om.canGenerateArraylets() &&
-       !TR::Compiler->om.isOffHeapAllocationEnabled() &&
        self()->cg()->canTransformUnsafeSetMemory())
       {
       /* Object passed into Unsafe.setMemory0(...) is not
