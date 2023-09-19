@@ -640,6 +640,8 @@ public:
    ///
    TR::Node *             skipConversions();
 
+   TR::Node *             convertStoreDirectToLoadWithI2LIfNeeded();
+
    TR::Node *             createLongIfNeeded();
 
    TR::TreeTop *          createStoresForVar(TR::SymbolReference * &nodeRef, TR::TreeTop *insertBefore, bool simpleRef = false);
@@ -1151,6 +1153,10 @@ public:
    // Flag used by TR::aiadd and TR::aladd
    bool isInternalPointer();
    void setIsInternalPointer(bool v);
+
+   // Flag used by TR::aloadi
+   bool isDataAddrPointer();
+   void setIsDataAddrPointer(bool v);
 
    // Flags used by TR::arraytranslate and TR::arraytranslateAndTest
    bool isArrayTRT();
@@ -1840,6 +1846,9 @@ protected:
 
       // Flag used by TR::aiadd and TR::aladd
       internalPointer                       = 0x00008000,
+
+      // dataAddr pointer node, used by TR::aloadi
+      dataAddrPointer                       = 0x00000400,
 
       // Flags used by TR::arraytranslate and TR::arraytranslateAndTest
       arrayTRT                              = 0x00008000,  ///< used by arraytranslateAndTest

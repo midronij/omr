@@ -3696,7 +3696,25 @@ OMR::Node::exceptionsRaised()
    return possibleExceptions;
    }
 
+TR::Node *
+OMR::Node::convertStoreDirectToLoadWithI2LIfNeeded()
+   {
+   TR::Node *retNode = NULL;
 
+
+   if (self()->getOpCode().isStoreDirect())
+      {
+      TR_ASSERT_FATAL_WITH_NODE(self(), self()->getOpCode().hasSymbolReference(), "parameter error");
+      retNode = TR::Node::createLoad(self(), self()->getSymbolReference());
+      }
+   else if (self()->getReferenceCount() > 0)
+      retNode = self()->duplicateTree();
+   else
+      retNode = self();
+
+   retNode = retNode->createLongIfNeeded();
+   return retNode;
+   }
 
 TR::Node *
 OMR::Node::skipConversions()
@@ -5895,6 +5913,21 @@ OMR::Node::setIsInternalPointer(bool v)
              "Opcode must be one that can have a pinningArrayPointer or must be an array reference");
    if (performNodeTransformation2(c, "O^O NODE FLAGS: Setting internalPointer flag on node %p to %d\n", self(), v))
       _flags.set(internalPointer, v);
+   }
+
+bool
+OMR::Node::isDataAddrPointer()
+   {
+   return self()->getOpCodeValue() == TR::aloadi && _flags.testAny(dataAddrPointer);
+   }
+
+void
+OMR::Node::setIsDataAddrPointer(bool v)
+   {
+   TR::Compilation *c = TR::comp();
+   TR_ASSERT_FATAL_WITH_NODE(self(), self()->getOpCodeValue() == TR::aloadi, "Opcode must be aloadi");
+   if (performNodeTransformation2(c, "O^O NODE FLAGS: Setting dataAddrPointer flag on node %p to %d\n", self(), v))
+      _flags.set(dataAddrPointer, v);
    }
 
 bool
