@@ -640,6 +640,8 @@ public:
    ///
    TR::Node *             skipConversions();
 
+   TR::Node *             convertStoreDirectToLoadWithI2LIfNeeded();
+
    TR::Node *             createLongIfNeeded();
 
    TR::TreeTop *          createStoresForVar(TR::SymbolReference * &nodeRef, TR::TreeTop *insertBefore, bool simpleRef = false);
