@@ -1377,7 +1377,15 @@ TR::Node *constrainAnyIntLoad(OMR::ValuePropagation *vp, TR::Node *node)
                TR::VPConstString *constString = baseVPConstraint->getClassType()->asConstString();
 
                uintptr_t offset = vp->comp()->target().is64Bit() ? (uintptr_t)index->getUnsignedLongInt() : (uintptr_t)index->getUnsignedInt();
-               uintptr_t chIdx = (offset - (uintptr_t)TR::Compiler->om.contiguousArrayHeaderSizeInBytes()) / 2;
+               uintptr_t chIdx = 0;
+               if (array->isDataAddrPointer())
+                  {
+                  chIdx = (offset) / 2;
+                  }
+               else
+                  {
+                  chIdx = (offset - (uintptr_t)TR::Compiler->om.contiguousArrayHeaderSizeInBytes()) / 2;
+                  }
                uint16_t ch = constString->charAt(static_cast<int32_t>(chIdx), vp->comp());
                if (ch != 0)
                   {
@@ -2020,18 +2028,53 @@ static TR::Node *findArrayIndexNode(OMR::ValuePropagation *vp, TR::Node *node, i
   bool usingAladd = (vp->comp()->target().is64Bit()
                      ) ?
           true : false;
+   // Note: index node here refers to the array element index.
+   if (node->getFirstChild()->isDataAddrPointer())
+      {
+      TR::Node *offset2 = NULL;
+      if (offset->getOpCode().isShiftLogical() ||
+         offset->getOpCode().isMul())
+         {
+         offset2 = offset;
+         }
+      else
+         offset2 = offset->getFirstChild();
 
-  if (usingAladd)
-     {
-     int32_t constValue;
-     if ((offset->getOpCode().isAdd() || offset->getOpCode().isSub()) &&
-         offset->getSecondChild()->getOpCode().isLoadConst())
-        {
-        if (offset->getSecondChild()->getType().isInt64())
-           constValue = (int32_t) offset->getSecondChild()->getLongInt();
-        else
-           constValue = offset->getSecondChild()->getInt();
-        }
+      if (offset2->getOpCodeValue() == TR::lmul)
+         {
+         TR::Node *mulStride = offset2->getSecondChild();
+         int32_t constValue;
+         if (mulStride->getOpCode().isLoadConst())
+            {
+            if (mulStride->getType().isInt64())
+               constValue = (int32_t) mulStride->getLongInt();
+            else
+               constValue = mulStride->getInt();
+            }
+
+         if (mulStride->getOpCode().isLoadConst() &&
+            constValue == stride)
+            {
+            if (offset2->getFirstChild()->getOpCodeValue() == TR::i2l)
+               return offset2->getFirstChild()->getFirstChild();
+            else
+               return offset2->getFirstChild();
+            }
+         }
+      else if (stride == 1)
+         return offset2;
+      }
+   else if (usingAladd)
+      {
+      int32_t constValue;
+      if ((offset->getOpCode().isAdd() || offset->getOpCode().isSub()) &&
+           offset->getSecondChild()->getOpCode().isLoadConst())
+         {
+         if (offset->getSecondChild()->getType().isInt64())
+            constValue = (int32_t) offset->getSecondChild()->getLongInt();
+         else
+            constValue = offset->getSecondChild()->getInt();
+         }
 
      if ((offset->getOpCode().isAdd() &&
          (offset->getSecondChild()->getOpCode().isLoadConst() &&
@@ -2039,58 +2082,60 @@ static TR::Node *findArrayIndexNode(OMR::ValuePropagation *vp, TR::Node *node, i
          (offset->getOpCode().isSub() &&
          (offset->getSecondChild()->getOpCode().isLoadConst() &&
          (constValue == -(int32_t)TR::Compiler->om.contiguousArrayHeaderSizeInBytes()))))
-        {
-        TR::Node *offset2 = offset->getFirstChild();
-        if (offset2->getOpCodeValue() == TR::lmul)
-           {
-           TR::Node *mulStride = offset2->getSecondChild();
-           int32_t constValue;
-           if (mulStride->getOpCode().isLoadConst())
-              {
-              if (mulStride->getType().isInt64())
-                 constValue = (int32_t) mulStride->getLongInt();
-              else
-                 constValue = mulStride->getInt();
-              }
+         {
+         TR::Node *offset2 = offset->getFirstChild();
+         if (offset2->getOpCodeValue() == TR::lmul)
+            {
+            TR::Node *mulStride = offset2->getSecondChild();
+            int32_t constValue;
+            if (mulStride->getOpCode().isLoadConst())
+               {
+               if (mulStride->getType().isInt64())
+                  constValue = (int32_t) mulStride->getLongInt();
+               else
+                  constValue = mulStride->getInt();
+               }
 
-           if (mulStride->getOpCode().isLoadConst() &&
-              constValue == stride)
-              {
-              if (offset2->getFirstChild()->getOpCodeValue() == TR::i2l)
-                 return offset2->getFirstChild()->getFirstChild();
-              else
-                 return offset2->getFirstChild();
-              }
-           }
-        else if (stride == 1)
-          return offset2;
-        }
-     }
-  else
-     {
-     if ((offset->getOpCode().isAdd() &&
-          (offset->getSecondChild()->getOpCode().isLoadConst() &&
+            if (mulStride->getOpCode().isLoadConst() &&
+               constValue == stride)
+               {
+               if (offset2->getFirstChild()->getOpCodeValue() == TR::i2l)
+                  return offset2->getFirstChild()->getFirstChild();
+               else
+                  return offset2->getFirstChild();
+               }
+            }
+         else if (stride == 1)
+            {
+            return offset2;
+            }
+         }
+      }
+   else
+      {
+      if ((offset->getOpCode().isAdd() &&
+           (offset->getSecondChild()->getOpCode().isLoadConst() &&
            (offset->getSecondChild()->getInt() == TR::Compiler->om.contiguousArrayHeaderSizeInBytes()))) ||
            (offset->getOpCode().isSub() &&
            (offset->getSecondChild()->getOpCode().isLoadConst() &&
            (offset->getSecondChild()->getInt() == -(int32_t)TR::Compiler->om.contiguousArrayHeaderSizeInBytes()))))
-        {
-        TR::Node *offset2 = offset->getFirstChild();
-        if (offset2->getOpCodeValue() == TR::imul)
-           {
-           TR::Node *mulStride = offset2->getSecondChild();
-           if (mulStride->getOpCode().isLoadConst() &&
-               mulStride->getInt() == stride)
-              {
-              return offset2->getFirstChild();
-              }
-           }
-        else if (stride == 1)
-           return offset2;
-        }
-     }
-  return NULL;
-  }
+         {
+         TR::Node *offset2 = offset->getFirstChild();
+         if (offset2->getOpCodeValue() == TR::imul)
+            {
+            TR::Node *mulStride = offset2->getSecondChild();
+            if (mulStride->getOpCode().isLoadConst() &&
+                mulStride->getInt() == stride)
+               {
+               return offset2->getFirstChild();
+               }
+            }
+         else if (stride == 1)
+            return offset2;
+         }
+      }
+   return NULL;
+   }
 
 // For TR::aiadd and TR::aladd
 TR::Node *constrainAddressRef(OMR::ValuePropagation *vp, TR::Node *node)
