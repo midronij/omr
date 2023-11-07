@@ -5214,7 +5214,7 @@ OMR::Node::setArrayStride(int32_t s)
 TR::AutomaticSymbol*
 OMR::Node::getPinningArrayPointer()
    {
-   TR_ASSERT(self()->hasPinningArrayPointer() || _unionBase._extension.getNumElems() < 6, "attempting to access _pinningArrayPointer field for node %s %p that does not support it", self()->getOpCode().getName(), this);
+   TR_ASSERT(self()->hasPinningArrayPointer() || _unionBase._extension.getNumElems() >= 6, "attempting to access _pinningArrayPointer field for node %s %p that does not support it", self()->getOpCode().getName(), this);
 
    if (self()->getOpCode().hasPinningArrayPointer())
       return _unionPropertyA._pinningArrayPointer;
