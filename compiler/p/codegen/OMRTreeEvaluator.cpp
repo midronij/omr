@@ -6079,6 +6079,8 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    // assemble the double word value from byte value
    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
    {
+      //TEST: move value back to GPR and use normal stores (instead of vector stores)
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, temp2Reg, valueReg);
       #if defined(__LITTLE_ENDIAN__)
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, valueNode, valueReg, valueReg, 7);
       #else
@@ -6102,12 +6104,22 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    // On P10, we can use vector instructions to cut down on loop iterations and residual tests
    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
    {
+      /*
       generateMemSrc1Instruction(cg, TR::InstOpCode::stxvd2x, node, TR::MemoryReference::createWithIndexReg(cg, NULL, dstAddrReg, 16), valueReg);
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 16);
       generateMemSrc1Instruction(cg, TR::InstOpCode::stxvd2x, node, TR::MemoryReference::createWithIndexReg(cg, NULL, dstAddrReg, 16), valueReg);
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 16);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::bdnz, node, loopStartLabel, cndReg);
-      
+      */
+
+      //TEST: move value back to GPR and use normal stores (instead of vector stores)
+      generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 0, 8), temp2Reg);
+      generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 8, 8), temp2Reg);
+      generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 16, 8), temp2Reg);
+      generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 24, 8), temp2Reg);
+      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 32);
+      generateConditionalBranchInstruction(cg, TR::InstOpCode::bdnz, node, loopStartLabel, cndReg);
+
       //loop exit
       generateLabelInstruction(cg, TR::InstOpCode::label, node, residualLabel);
       
