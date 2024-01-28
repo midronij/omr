@@ -8514,7 +8514,7 @@ bool TR_LoopVersioner::depsForLoopEntryPrep(
 
       traceMsg(comp(), "sverma: node: %p\n", node);
       // TODO_sverma: call TR::TransformUtil::findArrayBaseNode(comp(), node) for array base
-      TR::Node *base = arrayBaseAddressNode->getFirstChild();
+      TR::Node *base = arrayBaseAddressNode;
       if (base->isDataAddrPointer())
          base = base->getFirstChild();
       TR::Node *arrayLengthNode = TR::Node::create(TR::arraylength, 1, base);
