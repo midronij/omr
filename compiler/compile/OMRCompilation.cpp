@@ -1677,16 +1677,7 @@ bool OMR::Compilation::canTransformUnsafeCopyToArrayCopy()
        !TR::Compiler->om.canGenerateArraylets() &&
        !self()->getOption(TR_DisableUnsafe) &&
        self()->cg()->canTransformUnsafeCopyToArrayCopy())
-      {
-      /* Unsafe.copyMemory(...) and Unsafe.copyMemory0(...) can be called with
-       * offset containing absolute base address and object reference
-       * containing NULL. JIT needs address of the object to get to array data
-       * elements. Location of the data elements is stored in dataAddr slot of
-       * the array header so without object address JIT can't get to those
-       * elements. Hence, disabling the transformation if off-heap is enabled.
-       */
       return true;
-      }
 
    return false;
    }
@@ -1697,21 +1688,7 @@ bool OMR::Compilation::canTransformUnsafeSetMemory()
        !TR::Compiler->om.canGenerateArraylets() &&
        !self()->getOption(TR_DisableUnsafe) &&
        self()->cg()->canTransformUnsafeSetMemory())
-      {
-      /* Object passed into Unsafe.setMemory0(...) is not
-       * guaranteed to be an arrary. Disabling the
-       * transformation until we can figure out a way to
-       * verify object type.
-       * This can be problematic when off heap allocation
-       * is enabled. Off heap technology works
-       * by loading dataAddr pointer from the array header.
-       * Without verifying object type first we might end
-       * up loading some random value and crash.
-       * So disabling the transformation until we figure
-       * out a way to detect arrays.
-       */
       return true;
-      }
 
    return false;
    }
