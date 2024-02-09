@@ -1524,7 +1524,7 @@ public:
 
    static const char  *getDefaultOptions();
    static char        *validateOptions(void *feBase, TR_FrontEnd *fe);
-   static const char  *processOptionsJIT(const char *jitOptions, void *feBase, TR_FrontEnd *fe);
+   static const char  *processOptionsJIT(char *jitOptions, void *feBase, TR_FrontEnd *fe);
    static const char  *processOptionsAOT(const char *aotOptions, void *feBase, TR_FrontEnd *fe);
    static const char  *processOptions(const char *options, const char *envOptions, void *feBase, TR_FrontEnd *fe, TR::Options *cmdLineOptions);
    static const char  *latePostProcessJIT(void *jitConfig);
