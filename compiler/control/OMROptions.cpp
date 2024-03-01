@@ -2612,10 +2612,6 @@ OMR::Options::jitPreProcess()
       // sverma: disable opts known to be broken for off heap
       _disabledOptimizations[escapeAnalysis] = true;
       _disabledOptimizations[idiomRecognition] = true;
-      // Disable OSR
-      self()->setOption(TR_DisableOSR);
-      self()->setOption(TR_EnableOSR, false);
-      self()->setOption(TR_EnableOSROnGuardFailure, false);
       }
 
    self()->setOption(TR_DisableTreePatternMatching);
