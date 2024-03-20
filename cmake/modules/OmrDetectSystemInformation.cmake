@@ -198,11 +198,11 @@ macro(omr_detect_system_information)
 				# just use GNU config
 				set(_OMR_TOOLCONFIG "gnu")
 			endif()
-		elseif(CMAKE_C_COMPILER_ID MATCHES "^XL(Clang)?$" OR CMAKE_C_COMPILER_ID STREQUAL "zOS")
+		elseif(CMAKE_C_COMPILER_ID MATCHES "^XL(Clang)?$" OR CMAKE_C_COMPILER_ID STREQUAL "IBMClang" OR CMAKE_C_COMPILER_ID STREQUAL "zOS")
 			# In CMake 3.14 and prior, XLClang uses CMAKE_C_COMPILER_ID "XL"
 			# In CMake 3.15 and beyond, XLClang uses CMAKE_C_COMPILER_ID "XLClang"
 			set(_OMR_TOOLCONFIG "xlc")
-			if(CMAKE_C_COMPILER MATCHES ".*xlclang$")
+			if(CMAKE_C_COMPILER MATCHES ".*xlclang$" OR CMAKE_C_COMPILER_ID STREQUAL "IBMClang")
 				# Checking the CMAKE_C_COMPILER command is necessary to determine if XLClang is
 				# the compiler, since XLClang might have CMAKE_C_COMPILER_ID "XL" or "XLClang"
 				# depending on the CMake version. Without this check, it's ambiguous whether the
