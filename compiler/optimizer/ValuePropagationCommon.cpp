@@ -2359,7 +2359,6 @@ void OMR::ValuePropagation::generateArrayTranslateNode(TR::TreeTop *callTree,TR:
       arrayTranslateNode->setTargetIsByteArrayTranslate(true);
       }
    else
-#endif /* OMR_GC_SPARSE_HEAP_ALLOCATION */
       {
       dstPosition = TR::TransformUtil::generateArrayOffsetTrees(comp(), dstPosition, strideNode, 0, false);
       arrayTranslateNode->setSourceIsByteArrayTranslate(true);
