@@ -5910,7 +5910,7 @@ inline void generateLoadJ9Class(TR::Node* node, TR::Register* j9classReg, TR::Re
    TR::TreeEvaluator::generateVFTMaskInstruction(cg, node, j9classReg);
    }
 
-TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool arrayCheckNeeded)
+TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool arrayCheckNeeded, int headerSize)
    {
    TR::Compilation *comp = cg->comp();
    TR::Node             *dstBaseAddrNode, *dstOffsetNode, *dstAddrNode, *lengthNode, *valueNode;
