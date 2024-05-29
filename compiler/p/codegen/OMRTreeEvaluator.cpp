@@ -6030,9 +6030,17 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
 
    if (arrayCheckNeeded) // CASE (3)
    {
-      //generate array check if needed
-      TR::LabelSymbol *notArray = generateLabelSymbol(cg);
+      // There are two scenarios in which we DON'T want to modify the dest base address:
+      // 1.) If the object is NULL (since we can't load dataAddr from a NULL pointer)
+      // 2.) If the object is a non-array object
+      // So two checks are required (NULLCHK, ArrayCHK) to determine whether dataAddr should be loaded or not
+      TR::LabelSymbol *noDataAddr = generateLabelSymbol(cg);
+      
+      //generate NULLCHK
+      generateTrg1Src1ImmInstruction(cg,TR::InstOpCode::cmpi8, node, cndReg, dstBaseAddrReg, 0);
+      generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, noDataAddr, cndReg);
 
+      //generate ArrayCHK
       TR::Register *dstClassInfoReg = temp1Reg;
       TR::Register *arrayFlagReg = temp2Reg;
 
@@ -6047,7 +6055,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       generateTrg1Src1ImmInstruction(cg,TR::InstOpCode::cmpi8, node, cndReg, arrayFlagReg, 0);
 
       //if object is not an array (i.e.: temp1Reg & temp2Reg == 0), skip adjusting dstBaseAddr and dstOffset
-      generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, notArray, cndReg);
+      generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, noDataAddr, cndReg);
 
       //adjust arguments if object is array:
       //load dataAddr
@@ -6063,7 +6071,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
          generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstOffsetReg, dstOffsetReg, -headerSize);
 
       //arrayCHK will skip to here if object is not an array
-      generateLabelInstruction(cg, TR::InstOpCode::label, node, notArray);
+      generateLabelInstruction(cg, TR::InstOpCode::label, node, noDataAddr);
 
       //calculate dstAddr = dstBaseAddr + dstOffset
       dstAddrReg = dstBaseAddrReg;
