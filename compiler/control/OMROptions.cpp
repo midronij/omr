@@ -2442,17 +2442,11 @@ OMR::Options::jitLatePostProcess(TR::OptionSet *optionSet, void * jitConfig)
 
 // The string passed in as options should be from the -Xjit option
 const char *
-OMR::Options::processOptionsJIT(char *jitOptions, void *feBase, TR_FrontEnd *fe)
+OMR::Options::processOptionsJIT(const char *jitOptions, void *feBase, TR_FrontEnd *fe)
    {
    // Create the default JIT command line options object
    // only do this if this the first time around we're processing options
    //
-   char* ModStr = "exclude={*[Uu]nsafe*},dontinline={*[Uu]nsafe*},";
-   char* newStr = (char*) malloc(strlen(ModStr) + strlen(jitOptions));
-   strcpy(newStr, ModStr);
-   strcat(newStr, jitOptions);
-   jitOptions = newStr;
-
    if (!_jitCmdLineOptions)
       {
       _jitCmdLineOptions = new (PERSISTENT_NEW) TR::Options();
@@ -2616,9 +2610,7 @@ OMR::Options::jitPreProcess()
 #ifdef OMR_GC_SPARSE_HEAP_ALLOCATION
    if (TR::Compiler->om.isOffHeapAllocationEnabled())
       {
-      self()->setOption(TR_DisableUnsafe);
-      _disabledOptimizations[unsafeFastPath] = true;
-      // sverma: disable opts known to be broken for off heap
+      // Disable opts known to be broken for off heap
       _disabledOptimizations[escapeAnalysis] = true;
       _disabledOptimizations[idiomRecognition] = true;
       }
