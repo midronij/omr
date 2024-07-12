@@ -5899,7 +5899,7 @@ OMR::Power::TreeEvaluator::generateHelperBranchAndLinkInstruction(
       conditions, helperSym);
    }
 
-TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool arrayCheckNeeded)
+TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool arrayCheckNeeded, UDATA arrayBaseOffset)
    {
    TR::Compilation *comp = cg->comp();
    TR::Node             *dstBaseAddrNode, *dstOffsetNode, *dstAddrNode, *lengthNode, *valueNode;
@@ -5925,9 +5925,10 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::Register         *dstBaseAddrReg, *dstOffsetReg, *dstAddrReg, *lengthReg, *valueReg;
 
    // if the offset is a constant value less than 16 bits, then we dont need a separate register for it
-   int headerSize = TR::Compiler->om.contiguousArrayHeaderSizeInBytes();
+   int headerSize = arrayBaseOffset;
+
    bool useOffsetAsImmVal = dstOffsetNode && dstOffsetNode->getOpCode().isLoadConst() && 
-                            (dstOffsetNode->getConstValue() >= LOWER_IMMED) && (dstOffsetNode->getConstValue() <= UPPER_IMMED);
+                            ((dstOffsetNode->getConstValue() - headerSize) >= LOWER_IMMED) && ((dstOffsetNode->getConstValue() - headerSize) <= UPPER_IMMED);
 
    bool stopUsingCopyRegBase = dstBaseAddrNode ? TR::TreeEvaluator::stopUsingCopyReg(dstBaseAddrNode, dstBaseAddrReg, cg) : false;
    bool stopUsingCopyRegOffset = (dstOffsetNode && !useOffsetAsImmVal) ? TR::TreeEvaluator::stopUsingCopyReg(dstOffsetNode, dstOffsetReg, cg) : false;
@@ -6064,6 +6065,15 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       TR::MemoryReference *dataAddrSlotMR = TR::MemoryReference::createWithDisplacement(cg, dstBaseAddrReg, comp->fej9()->getOffsetOfContiguousDataAddrField(), TR::Compiler->om.sizeofReferenceAddress());
       generateTrg1MemInstruction(cg, TR::InstOpCode::Op_load, node, dstBaseAddrReg, dataAddrSlotMR);
 
+      //TESTING PURPOSES ONLY
+      //subtract array header size from offset
+      int newOffsetImmVal;
+
+      if (useOffsetAsImmVal)
+         newOffsetImmVal = dstOffsetNode->getConstValue() - headerSize;
+      else
+         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstOffsetReg, dstOffsetReg, -headerSize);
+      
       //arrayCHK will skip to here if object is not an array
       generateLabelInstruction(cg, TR::InstOpCode::label, node, noDataAddr);
 
@@ -6071,10 +6081,10 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       dstAddrReg = dstBaseAddrReg;
 
       if (useOffsetAsImmVal)
-         {
-         int offsetImmVal = dstOffsetNode->getConstValue();
-         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstBaseAddrReg, offsetImmVal);
-         }
+      {
+         //int offsetImmVal = dstOffsetNode->getConstValue();
+         generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstBaseAddrReg, newOffsetImmVal);
+      }
       else
          generateTrg1Src2Instruction(cg, TR::InstOpCode::add, node, dstAddrReg, dstBaseAddrReg, dstOffsetReg);
       }
