@@ -5992,6 +5992,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    if (arrayCheckNeeded)
       {
       TR::addDependency(conditions, dstBaseAddrReg, TR::RealRegister::NoReg, TR_GPR, cg);
+      conditions->getPostConditions()->getRegisterDependency(1)->setExcludeGPR0();
 
       if (!useOffsetAsImmVal)
          TR::addDependency(conditions, dstOffsetReg, TR::RealRegister::NoReg, TR_GPR, cg);
