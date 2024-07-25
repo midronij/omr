@@ -5899,22 +5899,30 @@ OMR::Power::TreeEvaluator::generateHelperBranchAndLinkInstruction(
       conditions, helperSym);
    }
 
-TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool arrayCheckNeeded, UDATA arrayBaseOffset)
+TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, UDATA arrayBaseOffset)
    {
    TR::Compilation *comp = cg->comp();
    TR::Node             *dstBaseAddrNode, *dstOffsetNode, *dstAddrNode, *lengthNode, *valueNode;
 
-   // IL tree structure depends on whether or not it's been determined that a runtime arrayCHK is needed
-   if (arrayCheckNeeded)
+   bool arrayCheckNeeded;
+
+   // IL tree structure depends on whether or not it's been determined that a runtime arrayCHK is needed:
+   // if node has four children (i.e.: object base address and offset are separate), need array check
+   // if node three children (i.e.: object base address and offset have already been added together), don't need array check
+   if (node->getNumChildren() == 4)
       {
+      arrayCheckNeeded = true;
+
       dstBaseAddrNode = node->getChild(0);
       dstOffsetNode = node->getChild(1);
       dstAddrNode = NULL;
       lengthNode = node->getChild(2);
       valueNode = node->getChild(3);
       }
-   else
+   else //i.e.: node->getNumChildren() == 3
       {
+      arrayCheckNeeded = false;
+
       dstBaseAddrNode = NULL;
       dstOffsetNode = NULL;
       dstAddrNode = node->getChild(0);
