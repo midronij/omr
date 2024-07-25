@@ -5899,22 +5899,30 @@ OMR::Power::TreeEvaluator::generateHelperBranchAndLinkInstruction(
       conditions, helperSym);
    }
 
-TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, bool arrayCheckNeeded, UDATA arrayBaseOffset)
+TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::CodeGenerator *cg, UDATA arrayBaseOffset)
    {
    TR::Compilation *comp = cg->comp();
    TR::Node             *dstBaseAddrNode, *dstOffsetNode, *dstAddrNode, *lengthNode, *valueNode;
 
-   // IL tree structure depends on whether or not it's been determined that a runtime arrayCHK is needed
-   if (arrayCheckNeeded)
+   bool arrayCheckNeeded;
+
+   // IL tree structure depends on whether or not it's been determined that a runtime arrayCHK is needed:
+   // if node has four children (i.e.: object base address and offset are separate), need array check
+   // if node three children (i.e.: object base address and offset have already been added together), don't need array check
+   if (node->getNumChildren() == 4)
       {
+      arrayCheckNeeded = true;
+
       dstBaseAddrNode = node->getChild(0);
       dstOffsetNode = node->getChild(1);
       dstAddrNode = NULL;
       lengthNode = node->getChild(2);
       valueNode = node->getChild(3);
       }
-   else
+   else //i.e.: node->getNumChildren() == 3
       {
+      arrayCheckNeeded = false;
+
       dstBaseAddrNode = NULL;
       dstOffsetNode = NULL;
       dstAddrNode = node->getChild(0);
@@ -5992,6 +6000,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    if (arrayCheckNeeded)
       {
       TR::addDependency(conditions, dstBaseAddrReg, TR::RealRegister::NoReg, TR_GPR, cg);
+      conditions->getPostConditions()->getRegisterDependency(1)->setExcludeGPR0();
 
       if (!useOffsetAsImmVal)
          TR::addDependency(conditions, dstOffsetReg, TR::RealRegister::NoReg, TR_GPR, cg);
@@ -5999,6 +6008,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    else
       {
       TR::addDependency(conditions, dstAddrReg, TR::RealRegister::NoReg, TR_GPR, cg);
+      conditions->getPostConditions()->getRegisterDependency(1)->setExcludeGPR0();
       }
 
    TR::addDependency(conditions, lengthReg, TR::RealRegister::NoReg, TR_GPR, cg);
@@ -6007,13 +6017,6 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::Register * temp2Reg = cg->allocateRegister();
    TR::addDependency(conditions, temp1Reg, TR::RealRegister::NoReg, TR_GPR, cg);
    TR::addDependency(conditions, temp2Reg, TR::RealRegister::NoReg, TR_GPR, cg);
-
-   TR::Register * tempVReg = NULL;
-   if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
-   {
-      tempVReg = cg->allocateRegister(TR_VRF);
-      TR::addDependency(conditions, tempVReg, TR::RealRegister::NoReg, TR_VRF, cg);
-   }
 
 
 #if defined (J9VM_GC_ENABLE_SPARSE_HEAP_ALLOCATION)
@@ -6094,11 +6097,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    // assemble the double word value from byte value
    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
       {
-      #if defined(__LITTLE_ENDIAN__)
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, valueNode, valueReg, valueReg, 7);
-      #else
-      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, valueNode, valueReg, valueReg, 0);
-      #endif
       }
    else
       {
@@ -6128,20 +6127,14 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
 
       //find number of residual bytes
       if (lengthNode->getType().isInt32())
-         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwinm, node, temp1Reg, temp1Reg, 5, 31);
+         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwinm, node, temp1Reg, temp1Reg, 5, CONSTANT64(0xFFFFFFFFFFFFFFFF));
       else
-         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicl, node, temp1Reg, temp1Reg, 5, 63);
+         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 5, CONSTANT64(0xFFFFFFFFFFFFFFFF));
 
       generateTrg1Src2Instruction(cg, TR::InstOpCode::subf, node, temp1Reg, temp1Reg, lengthReg);
 
-      //due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shited over before it can be used
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, tempVReg, temp1Reg);
-      #if defined(__LITTLE_ENDIAN__)
-      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, node, tempVReg, tempVReg, 7);
-      #else
-      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, node, tempVReg, tempVReg, 0);
-      #endif
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, temp1Reg, tempVReg);
+      //due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shifted over before it can be used
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56, CONSTANT64(0xFF00000000000000));
 
       //set residual bytes to desired value
       generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg);
