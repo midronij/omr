@@ -6017,13 +6017,6 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::addDependency(conditions, temp1Reg, TR::RealRegister::NoReg, TR_GPR, cg);
    TR::addDependency(conditions, temp2Reg, TR::RealRegister::NoReg, TR_GPR, cg);
 
-   TR::Register * tempVReg = NULL;
-   if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
-   {
-      tempVReg = cg->allocateRegister(TR_VRF);
-      TR::addDependency(conditions, tempVReg, TR::RealRegister::NoReg, TR_VRF, cg);
-   }
-
 
 #if defined (J9VM_GC_ENABLE_SPARSE_HEAP_ALLOCATION)
 
@@ -6137,20 +6130,14 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
 
       //find number of residual bytes
       if (lengthNode->getType().isInt32())
-         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwinm, node, temp1Reg, temp1Reg, 5, 31);
+         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwinm, node, temp1Reg, temp1Reg, 5, CONSTANT64(0xFFFFFFFFFFFFFFFF));
       else
-         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicl, node, temp1Reg, temp1Reg, 5, 63);
+         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 5, CONSTANT64(0xFFFFFFFFFFFFFFFF));
 
       generateTrg1Src2Instruction(cg, TR::InstOpCode::subf, node, temp1Reg, temp1Reg, lengthReg);
 
-      //due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shited over before it can be used
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, tempVReg, temp1Reg);
-      #if defined(__LITTLE_ENDIAN__)
-      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, node, tempVReg, tempVReg, 7);
-      #else
-      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::vspltb, node, tempVReg, tempVReg, 0);
-      #endif
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, temp1Reg, tempVReg);
+      //due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shifted over before it can be used
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56, CONSTANT64(0xFF00000000000000));
 
       //set residual bytes to desired value
       generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg);
