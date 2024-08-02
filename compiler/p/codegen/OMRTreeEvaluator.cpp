@@ -5961,7 +5961,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       // On P10, we can use vector instructions to cut down on loop iterations and residual tests -> valueReg must be a VSX register
       if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
          {
-         valCopyReg = cg->allocateRegister(TR_VSX_VECTOR);
+         valCopyReg = cg->allocateRegister(TR_VRF);
          generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, valueNode, valCopyReg, valueReg);
          }
       else
@@ -6020,8 +6020,8 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::Register * tempVReg = NULL;
    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
    {
-      tempVReg = cg->allocateRegister(TR_VSX_VECTOR);
-      TR::addDependency(conditions, tempVReg, TR::RealRegister::NoReg, TR_VSX_VECTOR, cg);
+      tempVReg = cg->allocateRegister(TR_VRF);
+      TR::addDependency(conditions, tempVReg, TR::RealRegister::NoReg, TR_VRF, cg);
    }
 
 
