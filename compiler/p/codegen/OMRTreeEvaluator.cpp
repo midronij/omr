@@ -5989,10 +5989,6 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    if (arrayCheckNeeded && !useOffsetAsImmVal)
       numDeps++;
 
-   //need extra register to set residual bits
-   if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
-      numDeps++;
-
    conditions = new (cg->trHeapMemory()) TR::RegisterDependencyConditions(numDeps, numDeps, cg->trMemory());
    TR::Register *cndReg = cg->allocateRegister(TR_CCR);
    TR::addDependency(conditions, cndReg, TR::RealRegister::cr0, TR_CCR, cg);
@@ -6026,20 +6022,20 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       // There are two scenarios in which we DON'T want to modify the dest base address:
       // 1.) If the object is NULL (since we can't load dataAddr from a NULL pointer)
       // 2.) If the object is a non-array object
-      // So two checks are required (NULLCHK, ArrayCHK) to determine whether dataAddr should be loaded or not
+      // So two checks are required (NULL, Array) to determine whether dataAddr should be loaded or not
       TR::LabelSymbol *noDataAddr = generateLabelSymbol(cg);
-      
-      // We only want to generate a runtime NULLCHK if the status of the object (i.e.: whether it is NULL or non-NULL)
+
+      // We only want to generate a runtime NULL test if the status of the object (i.e.: whether it is NULL or non-NULL)
       // is NOT known. Note that if the object is known to be NULL, arrayCheckNeeded will be false, so there is no need to check
       // that condition here.
       if (!dstBaseAddrNode->isNonNull())
          {
-         //generate NULLCHK
-         generateTrg1Src1ImmInstruction(cg,TR::InstOpCode::cmpi8, node, cndReg, dstBaseAddrReg, 0);
+         //generate NULL test
+         generateTrg1Src1ImmInstruction(cg, dstBaseAddrNode->getType().isInt32() ? TR::InstOpCode::cmpi4 : TR::InstOpCode::cmpi8, node, cndReg, dstBaseAddrReg, 0);
          generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, noDataAddr, cndReg);
          }
 
-      //generate ArrayCHK
+      //Array Check
       TR::Register *dstClassInfoReg = temp1Reg;
       TR::Register *arrayFlagReg = temp2Reg;
 
@@ -6056,9 +6052,9 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       TR::MemoryReference *dstClassMR = TR::MemoryReference::createWithDisplacement(cg, dstClassInfoReg, offsetof(J9Class, classDepthAndFlags), TR::Compiler->om.sizeofReferenceAddress());
       generateTrg1MemInstruction(cg, TR::InstOpCode::Op_load, node, dstClassInfoReg, dstClassMR);
 
-      //generate arrayCHK
-      loadConstant(cg, node, comp->fej9()->getFlagValueForArrayCheck(), arrayFlagReg);
-      generateTrg1Src2Instruction(cg, TR::InstOpCode::AND, node, arrayFlagReg, dstClassInfoReg, arrayFlagReg);
+      //generate array check
+      int32_t arrayFlagValue = comp->fej9()->getFlagValueForArrayCheck();
+      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andis_r, node, arrayFlagReg, dstClassInfoReg, arrayFlagValue >> 16);
       generateTrg1Src1ImmInstruction(cg,TR::InstOpCode::cmpi8, node, cndReg, arrayFlagReg, 0);
 
       //if object is not an array (i.e.: temp1Reg & temp2Reg == 0), skip adjusting dstBaseAddr and dstOffset
@@ -6101,15 +6097,15 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       }
    else
       {
-      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwimi, node, valueReg, valueReg,  8, 0xff00);
-      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwimi, node, valueReg, valueReg,  16, 0xffff0000);
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  8, 0xff00);
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  16, 0xffff0000);
       generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  32, 0xffffffff00000000);
       }
 
    generateTrg1Src1ImmInstruction(cg, lengthNode->getType().isInt32() ? TR::InstOpCode::cmpli4 : TR::InstOpCode::cmpli8, node, cndReg, lengthReg, 32);
-   generateTrg1Src1ImmInstruction(cg, lengthNode->getType().isInt32() ? TR::InstOpCode::srawi : TR::InstOpCode::sradi, node, temp1Reg, lengthReg, 5);
    generateConditionalBranchInstruction(cg, TR::InstOpCode::blt, node, residualLabel, cndReg);
 
+   generateTrg1Src1ImmInstruction(cg, lengthNode->getType().isInt32() ? TR::InstOpCode::srawi : TR::InstOpCode::sradi, node, temp1Reg, lengthReg, 5);
    generateSrc1Instruction(cg, TR::InstOpCode::mtctr, node, temp1Reg);
    generateLabelInstruction(cg, TR::InstOpCode::label, node, loopStartLabel);
 
@@ -6125,19 +6121,23 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       //loop exit
       generateLabelInstruction(cg, TR::InstOpCode::label, node, residualLabel);
 
-      //find number of residual bytes
-      if (lengthNode->getType().isInt32())
-         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rlwinm, node, temp1Reg, temp1Reg, 5, CONSTANT64(0xFFFFFFFFFFFFFFFF));
-      else
-         generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 5, CONSTANT64(0xFFFFFFFFFFFFFFFF));
+      //Set residual bytes (max number of residual bytes = 31 = 0x1F)
+      //First 16 byte segment
+      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 16); //get first hex char (can only be 0 or 1)
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::mr, node, temp2Reg, temp1Reg); //keep a copy of first hex char
 
-      generateTrg1Src2Instruction(cg, TR::InstOpCode::subf, node, temp1Reg, temp1Reg, lengthReg);
-
-      //due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shifted over before it can be used
+      //store to memory
+      //NOTE: due to a quirk of the stxvl instruction on P10, the number of residual bytes must be shifted over before it can be used
       generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56, CONSTANT64(0xFF00000000000000));
-
-      //set residual bytes to desired value
       generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg);
+
+      //advance to next 16 byte chunk IF number of residual bytes >= 16
+      generateTrg1Src2Instruction(cg, TR::InstOpCode::add, node, dstAddrReg, dstAddrReg, temp2Reg);
+
+      //Second 16 byte segment
+      generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 15); //get second hex char
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldicr, node, temp1Reg, temp1Reg, 56, CONSTANT64(0xFF00000000000000)); //shift num residual bytes
+      generateSrc3Instruction(cg, TR::InstOpCode::stxvl, node, valueReg, dstAddrReg, temp1Reg); //store to memory
       }
    else
       {
@@ -6148,32 +6148,32 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 32);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::bdnz, node, loopStartLabel, cndReg);
 
-      generateLabelInstruction(cg, TR::InstOpCode::label, node, residualLabel); //check 16 aligned
+      generateLabelInstruction(cg, TR::InstOpCode::label, node, residualLabel); //check if residual < 16
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 16);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, label8aligned, cndReg);
       generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 0, 8), valueReg);
       generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 8, 8), valueReg);
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 16);
 
-      generateLabelInstruction(cg, TR::InstOpCode::label, node, label8aligned); //check 8 aligned
+      generateLabelInstruction(cg, TR::InstOpCode::label, node, label8aligned); //check if residual < 8
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 8);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, label4aligned, cndReg);
       generateMemSrc1Instruction(cg, TR::InstOpCode::std, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 0, 8), valueReg);
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 8);
 
-      generateLabelInstruction(cg, TR::InstOpCode::label, node, label4aligned); //check 4 aligned
+      generateLabelInstruction(cg, TR::InstOpCode::label, node, label4aligned); //check if residual < 4
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 4);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, label2aligned, cndReg);
       generateMemSrc1Instruction(cg, TR::InstOpCode::stw, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 0, 4), valueReg);
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 4);
 
-      generateLabelInstruction(cg, TR::InstOpCode::label, node, label2aligned); //check 2 aligned
+      generateLabelInstruction(cg, TR::InstOpCode::label, node, label2aligned); //check if residual < 2
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 2);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, label1aligned, cndReg);
       generateMemSrc1Instruction(cg, TR::InstOpCode::sth, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 0, 2), valueReg);
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::addi, node, dstAddrReg, dstAddrReg, 2);
 
-      generateLabelInstruction(cg, TR::InstOpCode::label, node, label1aligned); //check 1 aligned
+      generateLabelInstruction(cg, TR::InstOpCode::label, node, label1aligned); //residual <= 1
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, temp1Reg, lengthReg, 1);
       generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, doneLabel, cndReg);
       generateMemSrc1Instruction(cg, TR::InstOpCode::stb, node, TR::MemoryReference::createWithDisplacement(cg, dstAddrReg, 0, 1), valueReg);
