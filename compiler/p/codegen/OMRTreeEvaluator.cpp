@@ -5975,10 +5975,17 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::LabelSymbol * residualLabel =  generateLabelSymbol(cg);
    TR::LabelSymbol * loopStartLabel =  generateLabelSymbol(cg);
    TR::LabelSymbol * doneLabel =  generateLabelSymbol(cg);
-   TR::LabelSymbol * label8aligned =  generateLabelSymbol(cg);
-   TR::LabelSymbol * label4aligned =  generateLabelSymbol(cg);
-   TR::LabelSymbol * label2aligned =  generateLabelSymbol(cg);
-   TR::LabelSymbol * label1aligned =  generateLabelSymbol(cg);
+
+   //these labels are not needed for the vector approach to storing to residual bytes (i.e.: P10+)
+   TR::LabelSymbol *label8aligned, *label4aligned, *label2aligned, *label1aligned;
+
+   if (!cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10))
+      {
+      label8aligned =  generateLabelSymbol(cg);
+      label4aligned =  generateLabelSymbol(cg);
+      label2aligned =  generateLabelSymbol(cg);
+      label1aligned =  generateLabelSymbol(cg);
+      }
 
    TR::RegisterDependencyConditions *conditions;
    int32_t numDeps = 6;
