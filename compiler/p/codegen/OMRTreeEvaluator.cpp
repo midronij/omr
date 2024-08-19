@@ -6098,9 +6098,9 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       }
    else
       {
-      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  8, 0xff00);
-      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  16, 0xffff0000);
-      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  32, 0xffffffff00000000);
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  8,  CONSTANT64(0x000000000000FF00));
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  16, CONSTANT64(0x00000000FFFF0000));
+      generateTrg1Src1Imm2Instruction(cg, TR::InstOpCode::rldimi, node, valueReg, valueReg,  32, CONSTANT64(0xFFFFFFFF00000000));
       }
    
    generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::Op_cmpli, node, cndReg, lengthReg, 32);
