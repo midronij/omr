@@ -5994,7 +5994,6 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    if (arrayCheckNeeded)
       {
       TR::addDependency(conditions, dstBaseAddrReg, TR::RealRegister::NoReg, TR_GPR, cg);
-      conditions->getPostConditions()->getRegisterDependency(1)->setExcludeGPR0();
 
       if (!useOffsetAsImmVal)
          TR::addDependency(conditions, dstOffsetReg, TR::RealRegister::NoReg, TR_GPR, cg);
@@ -6002,7 +6001,6 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    else
       {
       TR::addDependency(conditions, dstAddrReg, TR::RealRegister::NoReg, TR_GPR, cg);
-      conditions->getPostConditions()->getRegisterDependency(1)->setExcludeGPR0();
       }
 
    TR::addDependency(conditions, lengthReg, TR::RealRegister::NoReg, TR_GPR, cg);
@@ -6011,6 +6009,12 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::Register * temp2Reg = cg->allocateRegister();
    TR::addDependency(conditions, temp1Reg, TR::RealRegister::NoReg, TR_GPR, cg);
    TR::addDependency(conditions, temp2Reg, TR::RealRegister::NoReg, TR_GPR, cg);
+
+   //need to exlude GPR0 from the following registers:
+   //1.) dstBaseAddrReg/destAddrReg, since it holds the address of the object being written to
+   //2.) temp1Reg, since it will later hold the J9Class flags for the object at dstAddr
+   conditions->getPostConditions()->getRegisterDependency(1)->setExcludeGPR0(); //dstBaseAddrReg/dstAddrReg
+   conditions->getPostConditions()->getRegisterDependency(numDeps - 2)->setExcludeGPR0(); //temp1Reg
 
 
 #if defined (J9VM_GC_ENABLE_SPARSE_HEAP_ALLOCATION)
