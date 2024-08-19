@@ -5939,20 +5939,52 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
                             ((dstOffsetNode->getConstValue() - headerSize) >= LOWER_IMMED) && ((dstOffsetNode->getConstValue() - headerSize) <= UPPER_IMMED);
 
    bool stopUsingCopyRegBase = dstBaseAddrNode ? TR::TreeEvaluator::stopUsingCopyReg(dstBaseAddrNode, dstBaseAddrReg, cg) : false;
-   bool stopUsingCopyRegOffset = (dstOffsetNode && !useOffsetAsImmVal) ? TR::TreeEvaluator::stopUsingCopyReg(dstOffsetNode, dstOffsetReg, cg) : false;
    bool stopUsingCopyRegAddr = dstAddrNode ? TR::TreeEvaluator::stopUsingCopyReg(dstAddrNode, dstAddrReg, cg) : false ;
 
-   bool stopUsingCopyRegLen, stopUsingCopyRegVal;
+   bool stopUsingCopyRegOffset, stopUsingCopyRegLen, stopUsingCopyRegVal;
 
-   lengthReg = cg->evaluate(lengthNode);
-   if (!cg->canClobberNodesRegister(lengthNode))
+   //dstOffsetNode (type: long)
+   if (dstOffsetNode && !useOffsetAsImmVal) //only want to allocate a register for dstOffset if we're using it for the array check AND it isn't a constant
       {
-	   TR::Register *lenCopyReg = cg->allocateRegister();
-      generateTrg1Src1Instruction(cg, TR::InstOpCode::mr, lengthNode, lenCopyReg, lengthReg);
+      if (cg->comp()->target().is32Bit()) //on 32-bit systems, need to grab the lower 32 bits of the offset from the register pair
+         {
+         dstOffsetReg = cg->evaluate(dstOffsetNode);
+         TR::Register *offsetcopyReg = cg->allocateRegister();
+         generateTrg1Src1Instruction(cg, TR::InstOpCode::mr, dstOffsetNode, offsetcopyReg, dstOffsetReg->getLowOrder());
+
+         dstOffsetReg = offsetcopyReg;
+         stopUsingCopyRegOffset = true;
+         }
+      else
+         {
+         stopUsingCopyRegOffset = TR::TreeEvaluator::stopUsingCopyReg(dstOffsetNode, dstOffsetReg, cg);
+         }
+      }
+   else
+      {
+      stopUsingCopyRegOffset = false;
+      }
+
+   //lengthNode (type: long)
+   lengthReg = cg->evaluate(lengthNode);
+   if (cg->comp()->target().is32Bit() || !cg->canClobberNodesRegister(lengthNode))
+      {
+      TR::Register *lenCopyReg = cg->allocateRegister();
+
+      if (cg->comp()->target().is32Bit()) //on 32-bit systems, need to grab the lower 32 bits of the length from the register pair
+         generateTrg1Src1Instruction(cg, TR::InstOpCode::mr, lengthNode, lenCopyReg, lengthReg->getLowOrder());
+      else //i.e.: 64-bit system but length isn't clobberable: need to make a copy
+         generateTrg1Src1Instruction(cg, TR::InstOpCode::mr, lengthNode, lenCopyReg, lengthReg);
+
       lengthReg = lenCopyReg;
       stopUsingCopyRegLen = true;
       }
+   else
+      {
+      stopUsingCopyRegLen = false;
+      }
 
+   //valueNode (type: byte)
    valueReg = cg->evaluate(valueNode);
    if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P8))
       {
@@ -5990,7 +6022,7 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
    TR::RegisterDependencyConditions *conditions;
    int32_t numDeps = 6;
 
-   //need extra register for offset only if it isn't already included in the destination address AND it is too big to be used as an immediate value
+   //need extra register for offset only if it isn't already included in the destination address AND it isn't a constant
    if (arrayCheckNeeded && !useOffsetAsImmVal)
       numDeps++;
 
