@@ -6057,7 +6057,6 @@ TR::Register *OMR::Power::TreeEvaluator::setmemoryEvaluator(TR::Node *node, TR::
       //generate array check
       int32_t arrayFlagValue = comp->fej9()->getFlagValueForArrayCheck();
       generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andis_r, node, arrayFlagReg, dstClassInfoReg, arrayFlagValue >> 16);
-      generateTrg1Src1ImmInstruction(cg,TR::InstOpCode::Op_cmpi, node, cndReg, arrayFlagReg, 0);
 
       //if object is not an array (i.e.: temp1Reg & temp2Reg == 0), skip adjusting dstBaseAddr and dstOffset
       generateConditionalBranchInstruction(cg, TR::InstOpCode::beq, node, noDataAddr, cndReg);
