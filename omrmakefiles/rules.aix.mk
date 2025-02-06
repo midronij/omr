@@ -61,24 +61,28 @@ else
 endif
 GLOBAL_CPPFLAGS+=-D_XOPEN_SOURCE_EXTENDED=1 -D_ALL_SOURCE -DRS6000 -DAIXPPC -D_LARGE_FILES
 
-ifeq (openxl,$(OMR_TOOLCHAIN))
-  # openxl options
-  GLOBAL_CFLAGS+=-q mbcs -std=c89 -qinfo=pro
-  GLOBAL_CFLAGS+=-std=c++11
-else ifneq (,$(findstring xlclang,$(notdir $(CC))))
+ifeq (,$(findstring xlclang,$(notdir $(CC))))
+  ifeq (openxl,$(OMR_TOOLCHAIN))
+    # openxl options
+    GLOBAL_CFLAGS+=-q mbcs -std=c89 -qinfo=pro
+    GLOBAL_CFLAGS+=-std=c++11
+  else
+    # xlc options
+    GLOBAL_CFLAGS+=-q mbcs -qlanglvl=extended -qinfo=pro
+  endif
+else
   # xlclang options
   GLOBAL_CFLAGS+=-qlanglvl=extended0x -qxlcompatmacros
-else
-  # xlc options
-  GLOBAL_CFLAGS+=-q mbcs -qlanglvl=extended -qinfo=pro
 endif
 
-ifeq (openxl,$(OMR_TOOLCHAIN))
-  # openxl options
-  GLOBAL_CXXFLAGS+=-fno-exceptions
-else ifneq (,$(findstring xlclang++,$(notdir $(CXX))))
-  # xlc++ options
-  GLOBAL_CXXFLAGS+=-q mbcs -qinfo=pro
+ifeq (,$(findstring xlclang++,$(notdir $(CXX))))
+  ifeq (openxl,$(OMR_TOOLCHAIN))
+    # openxl options
+    GLOBAL_CXXFLAGS+=-fno-exceptions
+  else 
+    # xlc++ options
+    GLOBAL_CXXFLAGS+=-q mbcs -qinfo=pro
+  endif
 else
   # xlclang++ options
   GLOBAL_CXXFLAGS+=-qxlcompatmacros -fno-exceptions
