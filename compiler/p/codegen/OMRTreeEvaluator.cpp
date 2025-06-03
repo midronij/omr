@@ -911,6 +911,17 @@ OMR::Power::TreeEvaluator::mstoreiEvaluator(TR::Node *node, TR::CodeGenerator *c
    }
 
 TR::Register*
+OMR::Power::TreeEvaluator::msplatsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
+   {
+   TR::Register *resReg = TR::TreeEvaluator::vsplatsEvaluator(node, cg);
+
+   // Currently, only VectorAPI produces that opcode and the child can only have 0 or -1 value
+   // TODO: expand lowest bit for other cases in the future
+
+   return resReg;
+   }
+
+TR::Register*
 OMR::Power::TreeEvaluator::mTrueCountEvaluator(TR::Node *node, TR::CodeGenerator *cg)
    {
    TR::Node *firstChild = node->getFirstChild();
