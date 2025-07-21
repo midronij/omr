@@ -873,29 +873,36 @@ OMR::Power::TreeEvaluator::mAnyTrueEvaluator(TR::Node *node, TR::CodeGenerator *
 
    TR::Register *resultReg = cg->allocateRegister(TR_GPR);
    TR::Register *temp = cg->allocateRegister(TR_VRF);
-   TR::Register *splatReg = cg->allocateRegister(TR_VRF);
+   TR::Register *zeroReg = cg->allocateRegister(TR_VRF);
 
    node->setRegister(resultReg);
 
-   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, splatReg, 0);
+   generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, zeroReg, 0);
 
    if (maskReg)
-      generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, temp, splatReg, inputReg, maskReg);
+      generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, temp, zeroReg, inputReg, maskReg);
 
-   //check for any true values in each half of input vector separately
-   generateTrg1Src2Instruction(cg, OMR::InstOpCode::vcmpequd, node, temp, (maskReg ? temp : inputReg), splatReg);
-   generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlnor, node, temp, temp, temp);
+   //count leading zeroes for each word element and take sum
+   //if input is all 0's (i.e.: anyTrue is FALSE), each word element will have 32 leading zeroes, and the sum 
+   //will be 32 + 32 + 32 + 32 = 128 = 2^7
+   generateTrg1Src1Instruction(cg, OMR::InstOpCode::vclzw, node, temp, (maskReg ? temp : inputReg));
+   generateTrg1Src2Instruction(cg, TR::InstOpCode::vsumsws, node, temp, temp, zeroReg);
 
-   //OR the two halves together and move result to GPR
-   generateTrg1Src2ImmInstruction(cg, OMR::InstOpCode::xxpermdi, node, splatReg, temp, temp, 2);
-   generateTrg1Src2Instruction(cg, OMR::InstOpCode::vor, node, temp, temp, splatReg);
-   generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, resultReg, temp);
+   //move result to GPR
+   if (cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9))
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrld, node, resultReg, temp);
+   else
+      {
+      generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, temp, temp, zeroReg, 3); //move sum to upper doubleword element of tempRes
+      generateTrg1Src1Instruction(cg, TR::InstOpCode::mfvsrd, node, resultReg, temp);
+      }
 
-   //AND with 0000....01 to ensure that we return 1 if true, 0 if false
-   generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, resultReg, resultReg, 1);
+   //shift right 7 bits and flip least significant bit to get result (return 1 if true, 0 if false)
+   generateTrg1Src1ImmInstruction(cg, OMR::InstOpCode::sradi, node, resultReg, resultReg, 7);
+   generateTrg1Src2Instruction(cg, OMR::InstOpCode::nor, node, resultReg, resultReg, resultReg);
 
    cg->stopUsingRegister(temp);
-   cg->stopUsingRegister(splatReg);
+   cg->stopUsingRegister(zeroReg);
    cg->decReferenceCount(inputNode);
    if (maskNode) cg->decReferenceCount(maskNode);
 
