@@ -802,9 +802,9 @@
    vupklsh,          // vector unpack low signed halfword
 // vupklsw,          // Vector Unpack Low Signed Word
 // vupklpx,          // Vector Unpack Low Pixel
-// vupkhsw,          // Vector Unpack High Signed Word
+   vupkhsw,          // Vector Unpack High Signed Word
 // vpksdss,          // Vector Pack Signed Dword Signed Saturate
-// vpksdus,          // Vector Pack Signed Dword Unsigned Saturate
+   vpksdus,          // Vector Pack Signed Dword Unsigned Saturate
    vpkuhum,          // vector pack unsigned half word unsigned modulo
    vpkuwum,          // vector pack unsigned word unsigned modulo
 // vpkuwus,          // Vector Pack Unsigned Word Unsigned Saturate
@@ -962,9 +962,9 @@
 // xvxexpsp,         // VSX Vector Extract Exponent SP
 // xvxsigdp,         // VSX Vector Extract Significand DP
 // xvxsigsp,         // VSX Vector Extract Significand SP
-// xxbrd,            // VSX Vector Byte-Reverse Dword
+   xxbrd,            // VSX Vector Byte-Reverse Dword
 // xxbrh,            // VSX Vector Byte-Reverse Hword
-// xxbrw,            // VSX Vector Byte-Reverse Word
+   xxbrw,            // VSX Vector Byte-Reverse Word
    xxbrq,            // VSX Vector Byte-Reverse Qword
    fmrgew,           // Merge Even Word
    fmrgow,           // Merge Odd Word
