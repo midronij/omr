@@ -69,7 +69,8 @@
 //
 // Used on a class definition to indicate that the class is extensible
 //
-#if defined(__clang__) // Only clang is checking this macro for now
+#if defined(__clang__) && !defined(AIXPPC) // Only clang is checking this macro for now
+                                           // Disable on AIX for now due to OpenXL 17.1.3 bug
 #define OMR_EXTENSIBLE __attribute__((annotate("OMR_Extensible")))
 #else
 #define OMR_EXTENSIBLE
@@ -80,7 +81,8 @@
 // Used on a member function declaration in an extensible class to
 // indicate the function will not be overridden in a subclass
 //
-#if defined(__clang__) // Only clang is checking this macro for now
+#if defined(__clang__) && !defined(AIXPPC) // Only clang is checking this macro for now
+                                           // Disable on AIX for now due to OpenXL 17.1.3 bug
 #define OMR_FINAL __attribute__((annotate("OMR_FINAL")))
 #else
 #define OMR_FINAL
