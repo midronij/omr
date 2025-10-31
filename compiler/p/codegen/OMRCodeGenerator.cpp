@@ -153,6 +153,8 @@ void OMR::Power::CodeGenerator::initialize()
 
     // Tactical GRA settings.
     //
+    cg->setSupportsVectorRegisters();
+
     cg->setGlobalRegisterTable(_linkageProperties->getRegisterAllocationOrder());
     _numGPR = _linkageProperties->getNumAllocatableIntegerRegisters();
     _firstGPR = 0;
@@ -1012,7 +1014,8 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
         default:
             if (sym->getDataType().isVector()) {
                 if (sym->getDataType().getVectorElementType() == TR::Int32
-                    || sym->getDataType().getVectorElementType() == TR::Double) {
+                    || sym->getDataType().getVectorElementType() == TR::Double
+                    || sym->getDataType().getVectorElementType() == TR::Float) {
                     isVector = true;
                     firstIndex = self()->getFirstGlobalVRF();
                     lastIndex = self()->getLastGlobalVRF();
