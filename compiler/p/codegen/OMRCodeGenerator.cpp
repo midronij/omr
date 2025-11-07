@@ -1765,7 +1765,8 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
             else
                 return false;
         case TR::vconv:
-            if (et == TR::Double && opcode.getVectorSourceDataType().getVectorElementType() == TR::Int64)
+            if ((et == TR::Double && opcode.getVectorSourceDataType().getVectorElementType() == TR::Int64)
+                 || et == opcode.getVectorSourceDataType().getVectorElementType())
                 return true;
             else
                 return false;
