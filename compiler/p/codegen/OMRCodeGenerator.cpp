@@ -1767,9 +1767,15 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
         case TR::vconv:
             if ((et == TR::Double && opcode.getVectorSourceDataType().getVectorElementType() == TR::Int64)
                  || et == opcode.getVectorSourceDataType().getVectorElementType())
+            {
+                TR_ASSERT_FATAL(false, "\n\nJACKIE: getSupportsOpCodeForAutoSIMD returns TRUE for vconv\n\n");
                 return true;
+            }
             else
+            {
+                TR_ASSERT_FATAL(false, "\n\nJACKIE: getSupportsOpCodeForAutoSIMD returns FALSE for vconv - srcType = %s, tgtType = %s\n\n", opcode.getVectorSourceDataType().getVectorElementType().toString(), et.toString());
                 return false;
+            }
         case TR::vmadd:
             if (et == TR::Int8 || et == TR::Int16 || et == TR::Int32
                 || (et == TR::Int64 && cpu->isAtLeast(OMR_PROCESSOR_PPC_P8)) || et == TR::Float || et == TR::Double)

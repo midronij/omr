@@ -4748,11 +4748,16 @@ TR::Register *OMR::Power::TreeEvaluator::vfmaEvaluator(TR::Node *node, TR::CodeG
 
 TR::Register *OMR::Power::TreeEvaluator::vconvEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
+    traceMsg(cg->comp(),"\n\nJACKIE: vconvEvaluator called\n\n");
+
     TR::DataType srcType = node->getOpCode().getVectorSourceDataType().getVectorElementType();
     TR::DataType tgtType = node->getOpCode().getVectorResultDataType().getVectorElementType();
 
     if (srcType == tgtType)
+    {
+        traceMsg(cg->comp(), "\n\nJACKIE: calling passThroughEvaluator\n\n");
         return passThroughEvaluator(node, cg);
+    }
 
     TR_ASSERT_FATAL(srcType == TR::Int64 && tgtType == TR::Double,
         "Only vector Long to vector Double is currently supported\n");
