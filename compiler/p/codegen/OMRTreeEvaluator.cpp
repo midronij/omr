@@ -1810,6 +1810,12 @@ TR::Register *OMR::Power::TreeEvaluator::vcastEvaluator(TR::Node *node, TR::Code
     TR::DataType srcType = node->getOpCode().getVectorSourceDataType().getVectorElementType();
     TR::DataType resType = node->getOpCode().getVectorResultDataType().getVectorElementType();
 
+    if (srcType == resType)
+    {
+        traceMsg(cg->comp(), "\n\nJACKIE: calling passThroughEvaluator\n\n");
+        return passThroughEvaluator(node, cg);
+    }
+
     if (srcType.isFloatingPoint() && resType.isIntegral()) {
         TR::Node *child = node->getFirstChild();
         TR::Register *srcReg = cg->evaluate(child);
