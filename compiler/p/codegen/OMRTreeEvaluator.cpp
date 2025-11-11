@@ -1810,6 +1810,8 @@ TR::Register *OMR::Power::TreeEvaluator::vcastEvaluator(TR::Node *node, TR::Code
     TR::DataType srcType = node->getOpCode().getVectorSourceDataType().getVectorElementType();
     TR::DataType resType = node->getOpCode().getVectorResultDataType().getVectorElementType();
 
+    traceMsg(cg->comp(), "\n\nJACKIE: in vcastEvaluator - srcType is %s, resType is %s\n\n", srcType.toString(), resType.toString());
+
     if (srcType == resType)
     {
         traceMsg(cg->comp(), "\n\nJACKIE: calling passThroughEvaluator\n\n");
