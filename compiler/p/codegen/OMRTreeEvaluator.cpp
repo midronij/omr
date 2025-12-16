@@ -3243,6 +3243,21 @@ TR::Register *OMR::Power::TreeEvaluator::inlineVectorUnaryOp(TR::Node *node, TR:
     return resReg;
 }
 
+static bool isVectorFPCompareOp(TR::InstOpCode::Mnemonic op)
+{
+    switch (op) {
+        case TR::InstOpCode::xvcmpeqsp:
+        case TR::InstOpCode::xvcmpeqdp:
+        case TR::InstOpCode::xvcmpgesp:
+        case TR::InstOpCode::xvcmpgedp:
+        case TR::InstOpCode::xvcmpgtsp:
+        case TR::InstOpCode::xvcmpgtdp:
+            return true;
+        default:
+            return false;
+    }
+}
+
 TR::Register *OMR::Power::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR::CodeGenerator *cg,
     TR::InstOpCode::Mnemonic op)
 {
@@ -3267,7 +3282,7 @@ TR::Register *OMR::Power::TreeEvaluator::inlineVectorBinaryOp(TR::Node *node, TR
     }
 
     TR::Register *resReg;
-    if (!TR::InstOpCode(op).isVMX())
+    if (!TR::InstOpCode(op).isVMX() && !isVectorFPCompareOp(op))
         resReg = cg->allocateRegister(TR_VSX_VECTOR);
     else
         resReg = cg->allocateRegister(TR_VRF);
