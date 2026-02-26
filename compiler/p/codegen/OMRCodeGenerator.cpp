@@ -1702,13 +1702,16 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
                 return false;
         case TR::vload:
         case TR::vloadi:
+        case TR::vmloadi:
         case TR::vstore:
         case TR::vstorei:
         case TR::mload:
         case TR::mloadi:
         case TR::mstore:
         case TR::mstorei:
-            // since lxvb16x, stxvb16x, lxvh8x, and stxvh8x are not available on P8 and lower, vector/loads and stores
+            return true;
+        case TR::vmstorei:
+            // since lxvb16x, stxvb16x, lxvh8x, and stxvh8x are not available on P8 and lower, vmstorei 
             // should only be enabled under these conditions:
             if (et == TR::Int32 || et == TR::Int64 || et == TR::Float || et == TR::Double
                 || cpu->isAtLeast(OMR_PROCESSOR_PPC_P9) || cpu->isBigEndian())

@@ -3270,8 +3270,16 @@ TR::Register *OMR::Power::TreeEvaluator::vloadEvaluator(TR::Node *node, TR::Code
     }
 
     TR::Register *dstReg = cg->allocateRegister(kind);
-
     TR::LoadStoreHandler::generateLoadNodeSequence(cg, dstReg, node, opcode, 16, true);
+
+    // apply mask if provided
+    if (node->getOpCode().isVectorMasked()) {
+        TR::Node *maskNode = node->getSecondChild();
+        TR::Register *maskReg = cg->evaluate(maskNode);
+        
+        // set lanes where mask is not set to 0
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, dstReg, maskReg, dstReg, maskReg);
+    }
 
     // Because type-specific vector load instructions are not available on P8 or lower for Int8 and Int16,
     // on LE systems we need to manually rearrange the register contents to preserve the original element order
@@ -3302,23 +3310,33 @@ TR::Register *OMR::Power::TreeEvaluator::vstoreEvaluator(TR::Node *node, TR::Cod
 
     TR::InstOpCode::Mnemonic opcode;
     TR::DataType et = node->getDataType().getVectorElementType();
+    TR::InstOpCode::Mnemonic loadOp;
+    int numElements;
 
     switch (et) {
         case TR::Int8:
             opcode = cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9) ? TR::InstOpCode::stxvb16x
                                                                               : TR::InstOpCode::stxvw4x;
+            loadOp = TR::InstOpCode::lxvb16x;
+            numElements = 16;
             break;
         case TR::Int16:
             opcode = cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9) ? TR::InstOpCode::stxvh8x
                                                                               : TR::InstOpCode::stxvw4x;
+            loadOp = TR::InstOpCode::lxvh8x;
+            numElements = 8;
             break;
         case TR::Int32:
         case TR::Float:
             opcode = TR::InstOpCode::stxvw4x;
+            loadOp = TR::InstOpCode::lxvw4x;
+            numElements = 4;
             break;
         case TR::Int64:
         case TR::Double:
             opcode = TR::InstOpCode::stxvd2x;
+            loadOp = TR::InstOpCode::lxvd2x;
+            numElements = 2;
             break;
         default:
             TR_ASSERT(false, "unknown vector store TRIL: unrecognized vector type %s\n",
@@ -3344,6 +3362,21 @@ TR::Register *OMR::Power::TreeEvaluator::vstoreEvaluator(TR::Node *node, TR::Cod
         }
 
         cg->stopUsingRegister(rotateReg);
+    }
+
+    // apply mask if provided
+    if (node->getOpCode().isVectorMasked()) {
+        TR_ASSERT_FATAL(et == TR::Int32 || et == TR::Int64 || cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9), 
+            "vmstorei is not supported for Byte/ShortVectors on P8 and lower");
+
+        TR::Node *maskNode = node->getThirdChild();
+        TR::Register *maskReg = cg->evaluate(maskNode);
+        TR::Register *oldValReg = cg->allocateRegister(TR_VRF);
+
+        // keep lanes where mask isn't set the same
+        auto ref = TR::LoadStoreHandlerImpl::generateMemoryReference(cg, node, numElements, true, 0);
+        generateTrg1MemInstruction(cg, loadOp, node, oldValReg, ref.getMemoryReference());
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, valueReg, maskReg, valueReg, maskReg);
     }
 
     TR::LoadStoreHandler::generateStoreNodeSequence(cg, valueReg, node, opcode, 16, true);
