@@ -354,6 +354,8 @@ public:
         TR::InstOpCode::Mnemonic add);
     static TR::Register *visetelemHelper(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *vdsetelemHelper(TR::Node *node, TR::CodeGenerator *cg);
+    static TR::Register *vfirstNonZeroHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic cmpOp,
+        bool complement);
 
     static TR::Register *f2iuEvaluator(TR::Node *node, TR::CodeGenerator *cg);
     static TR::Register *f2luEvaluator(TR::Node *node, TR::CodeGenerator *cg);

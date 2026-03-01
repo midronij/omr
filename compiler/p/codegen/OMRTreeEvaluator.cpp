@@ -4713,7 +4713,71 @@ TR::Register *OMR::Power::TreeEvaluator::vorUncheckedEvaluator(TR::Node *node, T
 
 TR::Register *OMR::Power::TreeEvaluator::vfirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR::DataType elementType = node->getOpCode().getVectorSourceDataType().getVectorElementType();
+    bool p9Plus = cg->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P9); // VMX vector NE instructions are only available on P9 and up
+    
+    switch (elementType) {
+        case TR::Int8:
+            if (p9Plus)
+                return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpneb, false);
+            else
+                return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpequb, true);
+        case TR::Int16:
+            if (p9Plus)
+                return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpneh, false);
+            else
+                return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpequh, true);
+        case TR::Int32:
+            if (p9Plus)
+                return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpnew, false);
+            else
+                return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpequw, true);
+        case TR::Int64:
+            return vfirstNonZeroHelper(node, cg, TR::InstOpCode::vcmpequd, true);
+        case TR::Float:
+            return vfirstNonZeroHelper(node, cg, TR::InstOpCode::xvcmpeqsp, true);
+        case TR::Double:
+            return vfirstNonZeroHelper(node, cg, TR::InstOpCode::xvcmpeqdp, true);
+        default:
+            TR_ASSERT_FATAL(false, "unrecognized vector type %s\n", elementType.toString());
+            return NULL;
+    }
+}
+
+TR::Register *OMR::Power::TreeEvaluator::vfirstNonZeroHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic cmpOp, bool complement)
+{
+    TR::Node *firstChild = node->getFirstChild();
+    TR::Node *secondChild = node->getSecondChild();
+    TR::Node *maskNode = node->getOpCode().isVectorMasked() ? node->getThirdChild() : NULL;
+
+    TR::Register *src1Reg = cg->evaluate(firstChild);
+    TR::Register *src2Reg = cg->evaluate(secondChild);
+    TR::Register *maskReg = maskNode ? cg->evaluate(maskNode) : NULL;
+
+    TR::Register *resReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(resReg);
+
+    // check which lanes of src1 are nonzero
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlxor, node, resReg, src1Reg, src1Reg);
+    generateTrg1Src2Instruction(cg, cmpOp, node, resReg, src1Reg, resReg);
+
+    if (complement)
+        generateTrg1Src2Instruction(cg, TR::InstOpCode::xxlnor, node, resReg, resReg, resReg);
+
+    // for each lane, if src1 != 0 then res = src1, else res = src2
+    generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, src2Reg, src1Reg, resReg);
+
+    // apply mask if provided
+    if (maskReg)
+        generateTrg1Src3Instruction(cg, TR::InstOpCode::xxsel, node, resReg, src1Reg, resReg, maskReg);
+
+    cg->decReferenceCount(firstChild);
+    cg->decReferenceCount(secondChild);
+    if (maskNode)
+        cg->decReferenceCount(maskNode);
+
+    return resReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vmabsEvaluator(TR::Node *node, TR::CodeGenerator *cg)
@@ -4883,7 +4947,7 @@ TR::Register *OMR::Power::TreeEvaluator::vmxorEvaluator(TR::Node *node, TR::Code
 
 TR::Register *OMR::Power::TreeEvaluator::vmfirstNonZeroEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    return vfirstNonZeroEvaluator(node, cg);
 }
 
 TR::Register *OMR::Power::TreeEvaluator::vpopcntEvaluator(TR::Node *node, TR::CodeGenerator *cg)

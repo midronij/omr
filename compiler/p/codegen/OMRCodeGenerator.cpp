@@ -1771,6 +1771,7 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
                 return true;
             else
                 return false;
+        case TR::vfirstNonZero:
         case TR::vbitselect:
         case TR::vcast:
         case TR::v2m:
