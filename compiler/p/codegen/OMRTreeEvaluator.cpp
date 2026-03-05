@@ -1067,7 +1067,81 @@ TR::Register *OMR::Power::TreeEvaluator::mToLongBitsHelper(TR::Node *node, TR::C
 
 TR::Register *OMR::Power::TreeEvaluator::mLongBitsToMaskEvaluator(TR::Node *node, TR::CodeGenerator *cg)
 {
-    return TR::TreeEvaluator::unImpOpEvaluator(node, cg);
+    TR_ASSERT_FATAL_WITH_NODE(node, node->getDataType().getVectorLength() == TR::VectorLength128,
+        "Only 128-bit vectors are supported %s", node->getDataType().toString());
+
+    switch (node->getDataType().getVectorElementType()) {
+        case (TR::Int8):
+            return mLongBitsToMaskHelper(node, cg, TR::InstOpCode::vspltisb, TR::InstOpCode::bad, TR::InstOpCode::vsububm, 16);
+        case (TR::Int16):
+            return mLongBitsToMaskHelper(node, cg, TR::InstOpCode::vspltisb, TR::InstOpCode::vupkhsb, TR::InstOpCode::vsubuhm, 8);
+        case (TR::Int32):
+        case (TR::Float):
+            return mLongBitsToMaskHelper(node, cg, TR::InstOpCode::vspltish, TR::InstOpCode::vupkhsh, TR::InstOpCode::vsubuwm, 4);
+        case (TR::Int64):
+        case (TR::Double):
+            return mLongBitsToMaskHelper(node, cg, TR::InstOpCode::vspltisw, TR::InstOpCode::vupkhsw, TR::InstOpCode::vsubudm, 4);
+        default:
+            TR_ASSERT_FATAL(false, "Unsupported vector type %s for mLongBitsToMaskEvaluator\n", node->getDataType().toString());
+            return NULL;
+    }
+}
+
+TR::Register *OMR::Power::TreeEvaluator::mLongBitsToMaskHelper(TR::Node *node, TR::CodeGenerator *cg, TR::InstOpCode::Mnemonic splatOp, TR::InstOpCode::Mnemonic unpackOp, TR::InstOpCode::Mnemonic subOp, int numElements)
+{
+    TR::Node *firstChild = node->getFirstChild();
+
+    TR::Register *srcReg = cg->evaluate(firstChild);
+    TR::Register *resReg = cg->allocateRegister(TR_VRF);
+    
+    TR::Register *filteredSrcReg = cg->allocateRegister(TR_GPR);
+    TR::Register *controlReg = cg->allocateRegister(TR_VRF);
+
+    node->setRegister(resReg);
+
+    // eliminate all but numElements least significant bits (since we only want as many mask values as we have lanes for the given VectorMask type) and move to vector register
+    if (numElements == 16) {
+        // bits 0-7
+        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, filteredSrcReg, srcReg, 0xFF);
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, resReg, filteredSrcReg);
+
+        // bits 8-15
+        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::sradi, node, filteredSrcReg, srcReg, 8);
+        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, filteredSrcReg, srcReg, 0xFF);
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, controlReg, filteredSrcReg);
+
+        // put bits 0-7 in doubleword element 0, bits 8-15 in doubleword element 1
+        generateTrg1Src2ImmInstruction(cg, TR::InstOpCode::xxpermdi, node, resReg, resReg, controlReg, 0);
+    } else {
+        generateTrg1Src1ImmInstruction(cg, TR::InstOpCode::andi_r, node, filteredSrcReg, srcReg, (2 << numElements) - 1);
+        generateTrg1Src1Instruction(cg, TR::InstOpCode::mtvsrd, node, resReg, filteredSrcReg);
+    }
+
+    // set controlReg such at that bit 0 of each byte element is 1
+    generateTrg1ImmInstruction(cg, splatOp, node, controlReg, 1);
+
+    // deposit src bits into the bits in resReg that correspond to the bits in controlReg that are set to 1
+    generateTrg1Src2Instruction(cg, TR::InstOpCode::vpdepd, node, resReg, resReg, controlReg);
+
+    // unpack to given VectorMask type (not needed for ByteVector since vpdepd already puts mask bits into byte elements)
+    if (numElements < 16)
+        generateTrg1Src1Instruction(cg, unpackOp, node, resReg, resReg);
+
+    // since OMR assumes that boolean values are represented as 0x00 for false and 0x01 for true, we can create an
+    // all 0/1 mask by subtracting from 0:
+    // 0-1 = -1 = 0xFF...
+    // 0-0 = 0
+    generateTrg1ImmInstruction(cg, TR::InstOpCode::vspltisw, node, controlReg, 0);
+    generateTrg1Src2Instruction(cg, subOp, node, resReg, controlReg, resReg);
+
+    // reverse byte order (needed due to semantics of VectorAPI library implementation)
+    generateTrg1Src1Instruction(cg, OMR::InstOpCode::xxbrq, node, resReg, resReg);
+
+    cg->stopUsingRegister(filteredSrcReg);
+    cg->stopUsingRegister(controlReg);
+    cg->decReferenceCount(firstChild);
+
+    return resReg;
 }
 
 TR::Register *OMR::Power::TreeEvaluator::mRegLoadEvaluator(TR::Node *node, TR::CodeGenerator *cg)
