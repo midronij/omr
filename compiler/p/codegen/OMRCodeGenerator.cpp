@@ -990,14 +990,11 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
 
         default:
             if (sym->getDataType().isVector()) {
-                if (sym->getDataType().getVectorElementType() == TR::Int32
-                    || sym->getDataType().getVectorElementType() == TR::Double) {
-                    isVector = true;
-                    firstIndex = self()->getFirstGlobalVRF();
-                    lastIndex = self()->getLastGlobalVRF();
-                    lastVolIndex = lastIndex; // TODO: preserved VRF's !!
-                    break;
-                }
+                isVector = true;
+                firstIndex = self()->getFirstGlobalVRF();
+                lastIndex = self()->getLastGlobalVRF();
+                lastVolIndex = lastIndex; // TODO: preserved VRF's !!
+                break;
             }
 
             firstIndex = _firstGPR;
