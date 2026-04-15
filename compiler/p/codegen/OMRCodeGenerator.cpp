@@ -993,7 +993,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
                 isVector = true;
                 firstIndex = self()->getFirstGlobalVRF();
                 lastIndex = self()->getLastGlobalVRF();
-                lastVolIndex = lastIndex; // TODO: preserved VRF's !!
+                lastVolIndex = lastIndex;
                 break;
             }
 
@@ -1100,7 +1100,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
             i1 = sym->getParmSymbol()->getLinkageRegisterIndex();
             if (i1 >= 0) {
                 if (isVector)
-                    TR_ASSERT(false, "assertion failure"); // TODO
+                    TR_ASSERT(false, "vector symbols cannot yet be passed in as parameters");
                 i1 = (isFloatType ? _firstParmFPR : _firstParmGPR) - i1 - longLow;
                 if (availRegs.isSet(i1))
                     return (i1);
@@ -1118,7 +1118,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
             i1 = sym->getParmSymbol()->getLinkageRegisterIndex();
             if (i1 >= 0) {
                 if (isVector)
-                    TR_ASSERT(false, "assertion failure"); // TODO
+                    TR_ASSERT(false, "vector symbols cannot yet be passed in as parameters");
                 i1 = (isFloatType ? _firstParmFPR : _firstParmGPR) - i1 - longLow;
                 if (availRegs.isSet(i1))
                     return (i1);
