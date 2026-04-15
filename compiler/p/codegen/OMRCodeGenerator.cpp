@@ -795,9 +795,9 @@ void OMR::Power::CodeGenerator::buildRegisterMapForInstruction(TR_GCStackMap *ma
     map->setInternalPointerMap(internalPtrMap);
 }
 
-bool OMR::Power::CodeGenerator::considerTypeForGRA(TR::Node *node) { return !node->getDataType().isMask(); }
+bool OMR::Power::CodeGenerator::considerTypeForGRA(TR::Node *node) { return true; }
 
-bool OMR::Power::CodeGenerator::considerTypeForGRA(TR::DataType dt) { return !dt.isMask(); }
+bool OMR::Power::CodeGenerator::considerTypeForGRA(TR::DataType dt) { return true; }
 
 bool OMR::Power::CodeGenerator::considerTypeForGRA(TR::SymbolReference *symRef)
 {
@@ -989,7 +989,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
             break;
 
         default:
-            if (sym->getDataType().isVector()) {
+            if (sym->getDataType().isVector() || sym->getDataType().isMask()) {
                 isVector = true;
                 firstIndex = self()->getFirstGlobalVRF();
                 lastIndex = self()->getLastGlobalVRF();
@@ -1004,7 +1004,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
     }
 
     bool gprCandidate = true;
-    if ((sym->getDataType() == TR::Float) || (sym->getDataType() == TR::Double) || sym->getDataType().isVector())
+    if ((sym->getDataType() == TR::Float) || (sym->getDataType() == TR::Double) || sym->getDataType().isVector() || sym->getDataType().isMask())
         gprCandidate = false;
 
     if (gprCandidate) {
@@ -1055,7 +1055,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
             for (prev = candidates->getFirst(); prev; prev = prev->getNext()) {
                 bool gprCandidate = true;
                 if ((prev->getSymbol()->getDataType() == TR::Float) || (prev->getSymbol()->getDataType() == TR::Double)
-                    || sym->getDataType().isVector())
+                    || sym->getDataType().isVector() || sym->getDataType().isMask())
                     gprCandidate = false;
                 if (gprCandidate && prev->getBlocksLiveOnEntry().get(liveBlockNum)) {
                     numAssignedGlobalRegs++;
