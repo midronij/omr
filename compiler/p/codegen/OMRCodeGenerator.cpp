@@ -991,7 +991,12 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
         default:
             if (sym->getDataType().isVector() || sym->getDataType().isMask()) {
                 isVector = true;
-                firstIndex = self()->getFirstGlobalVRF();
+
+                if (sym->getDataType().getVectorElementType() == TR::Float || sym->getDataType().getVectorElementType() == TR::Double)
+                    firstIndex = _firstFPR;
+                else
+                    firstIndex = self()->getFirstGlobalVRF();
+
                 lastIndex = self()->getLastGlobalVRF();
                 lastVolIndex = lastIndex;
                 break;
