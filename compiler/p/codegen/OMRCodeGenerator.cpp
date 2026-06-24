@@ -1768,9 +1768,9 @@ bool OMR::Power::CodeGenerator::getSupportsOpCodeForAutoSIMD(TR::CPU *cpu, TR::I
                 return false;
         case TR::vfma:
         case TR::vmfma:
-            if (et == TR::Float || et == TR::Double)
-                return true;
-            else
+            //if (et == TR::Float || et == TR::Double)
+            //    return true;
+            //else
                 return false;
         case TR::vgetelem:
             if (et == TR::Int32 || et == TR::Int64 || et == TR::Float || et == TR::Double)
