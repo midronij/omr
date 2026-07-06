@@ -1020,13 +1020,7 @@ TR_GlobalRegisterNumber OMR::Power::CodeGenerator::pickRegister(TR::RegisterCand
         static uint32_t maxVSRsForGRA = atoi(pMaxVSRsForGRA);
 
         // count how many registers have been allocated (i.e.: how many are not available)
-        int numAllocated;
-
-        if (sym->getDataType().getVectorElementType() == TR::Float
-            || sym->getDataType().getVectorElementType() == TR::Double)
-            numAllocated = 64 - availRegs.elementCount();
-        else
-            numAllocated = 32 - availRegs.elementCount();
+        int numAllocated = 64 - availRegs.elementCount();
 
         // if max has already been met, exit
         if (numAllocated >= maxVSRsForGRA)
