@@ -725,7 +725,7 @@ TR::RealRegister *OMR::Power::Machine::freeBestRegister(TR::Instruction *current
             tmemref->setUsingDelayedIndexedForm();
             tmemref->setIndexRegister(tempIndexRegister);
             tmemref->setIndexModifiable();
-            opCode = TR::InstOpCode::lxvd2x;
+            opCode = cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10) ? TR::InstOpCode::lxv : TR::InstOpCode::lxvd2x;
             tmemref->setLength(16);
             reloadInstr = generateTrg1MemInstruction(cg(), opCode, currentNode, best, tmemref, currentInstruction);
             tempIndexRegister->setHasBeenAssignedInMethod(true);
@@ -743,7 +743,7 @@ TR::RealRegister *OMR::Power::Machine::freeBestRegister(TR::Instruction *current
             tmemref->setUsingDelayedIndexedForm();
             tmemref->setIndexRegister(tempIndexRegister);
             tmemref->setIndexModifiable();
-            opCode = TR::InstOpCode::lxvd2x;
+            opCode = cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10) ? TR::InstOpCode::lxv : TR::InstOpCode::lxvd2x;
             tmemref->setLength(16);
             reloadInstr = generateTrg1MemInstruction(cg(), opCode, currentNode, best, tmemref, currentInstruction);
             tempIndexRegister->setHasBeenAssignedInMethod(true);
@@ -950,7 +950,7 @@ TR::RealRegister *OMR::Power::Machine::reverseSpillState(TR::Instruction *curren
             tmemref->setUsingDelayedIndexedForm();
             tmemref->setIndexRegister(tempIndexRegister);
             tmemref->setIndexModifiable();
-            opCode = TR::InstOpCode::stxvd2x;
+            opCode = cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10) ? TR::InstOpCode::stxv : TR::InstOpCode::stxvd2x;
             tmemref->setLength(16);
             spillInstr
                 = generateMemSrc1Instruction(cg(), opCode, currentNode, tmemref, targetRegister, currentInstruction);
@@ -969,7 +969,7 @@ TR::RealRegister *OMR::Power::Machine::reverseSpillState(TR::Instruction *curren
             tmemref->setUsingDelayedIndexedForm();
             tmemref->setIndexRegister(tempIndexRegister);
             tmemref->setIndexModifiable();
-            opCode = TR::InstOpCode::stxvd2x;
+            opCode = cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10) ? TR::InstOpCode::stxv : TR::InstOpCode::stxvd2x;
             tmemref->setLength(16);
             spillInstr
                 = generateMemSrc1Instruction(cg(), opCode, currentNode, tmemref, targetRegister, currentInstruction);
