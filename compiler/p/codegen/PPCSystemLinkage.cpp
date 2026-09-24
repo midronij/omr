@@ -530,6 +530,8 @@ void TR::PPCSystemLinkage::mapSingleAutomatic(TR::AutomaticSymbol *p, uint32_t &
     if ((size & (size - 1)) == 0 && size <= 8) // if size is power of 2 and small
     {
         align = size;
+    } else if (cg()->comp()->target().cpu.isAtLeast(OMR_PROCESSOR_PPC_P10) && size == 16) {
+        align = 16;
     } else if (size > 8) {
         align = 8;
     }
